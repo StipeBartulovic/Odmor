@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { FormEvent } from 'react';
@@ -12,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CalendarDays, Users, DollarSign, Car, Sparkles, Search, Send } from "lucide-react";
+import { CalendarDays, Users, DollarSign, Car, Sparkles, Search, Send, Loader2, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
@@ -176,6 +175,38 @@ const translations = {
     fr: 'Échec de l\'envoi de la demande d\'itinéraire. Veuillez réessayer.',
     es: 'Error al enviar la solicitud de itinerario. Inténtalo de nuevo.',
   },
+  generatingItinerary: {
+    en: 'Generating your itinerary...',
+    it: 'Generazione del tuo itinerario...',
+    de: 'Dein Reiseplan wird erstellt...',
+    pl: 'Generowanie planu podróży...',
+    fr: 'Génération de votre itinéraire...',
+    es: 'Generando tu itinerario...',
+  },
+  yourGeneratedItinerary: {
+    en: 'Your Generated Itinerary',
+    it: 'Il Tuo Itinerario Generato',
+    de: 'Ihr Erstellter Reiseplan',
+    pl: 'Twój Wygenerowany Plan Podróży',
+    fr: 'Votre Itinéraire Généré',
+    es: 'Tu Itinerario Generado',
+  },
+  tryAnotherOne: {
+    en: 'Try Another One',
+    it: 'Prova un Altro',
+    de: 'Noch Einen Versuchen',
+    pl: 'Spróbuj Ponownie',
+    fr: 'Essayer un Autre',
+    es: 'Probar Otro',
+  },
+  unexpectedResponse: {
+    en: 'Received an unexpected response from the server.',
+    it: 'Ricevuta una risposta inaspettata dal server.',
+    de: 'Unerwartete Antwort vom Server erhalten.',
+    pl: 'Otrzymano nieoczekiwaną odpowiedź z serwera.',
+    fr: 'Réponse inattendue reçue du serveur.',
+    es: 'Se recibió una respuesta inesperada del servidor.',
+  }
 };
 
 
@@ -190,14 +221,17 @@ export function AiPromptInterface() {
   const [preferences, setPreferences] = useState<string>("");
   const [promptText, setPromptText] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [generatedItinerary, setGeneratedItinerary] = useState<string | null>(null);
+
 
   useEffect(() => {
+    // Initialize arrivalDate only on client-side to avoid hydration issues
     setArrivalDate(new Date());
   }, []);
   
   const t = (field: keyof typeof translations, subField?: string): string => {
     const dict = translations[field];
-    if (subField && typeof dict[subField as keyof typeof dict] === 'object') {
+    if (subField && typeof dict === 'object' && dict.hasOwnProperty(subField)) {
          // @ts-ignore
         return dict[subField][selectedLanguage] || dict[subField]['en'];
     }
@@ -208,12 +242,13 @@ export function AiPromptInterface() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setGeneratedItinerary(null);
 
     const payload = {
       prompt: promptText,
       numberOfPeople: parseInt(numPeople, 10),
       arrivalDate: arrivalDate ? format(arrivalDate, "yyyy-MM-dd") : "",
-      dailyBudget: budgetOption === "custom" ? customBudget : budgetOption,
+      dailyBudget: budgetOption === "custom" ? customBudget : budgetOption || "",
       vehicleAvailability: vehicleAvailable,
       preferences: preferences,
     };
@@ -230,17 +265,44 @@ export function AiPromptInterface() {
       });
 
       if (response.ok) {
-        console.log("Form submitted successfully:", payload);
-        toast({
-          title: "Success!",
-          description: t('successMessage'),
-          variant: "default",
-        });
-        // Optionally clear the form or navigate user
-        // setPromptText("");
-        // ... reset other fields if needed
+        const responseData = await response.json();
+        console.log("Form submitted successfully, response data:", responseData);
+
+        if (responseData && responseData.myField && typeof responseData.myField === 'string') {
+          let itineraryContent = responseData.myField;
+          try {
+            // Attempt to parse myField's content if it's a JSON string
+            const parsedFieldValue = JSON.parse(itineraryContent);
+            // Check if it's the expected array structure with an 'output' field
+            if (Array.isArray(parsedFieldValue) && parsedFieldValue.length > 0 && 
+                typeof parsedFieldValue[0] === 'object' && parsedFieldValue[0] !== null && 
+                'output' in parsedFieldValue[0] && typeof parsedFieldValue[0].output === 'string') {
+              itineraryContent = parsedFieldValue[0].output;
+            } else {
+              // If it's some other valid JSON, pretty-print it
+              itineraryContent = JSON.stringify(parsedFieldValue, null, 2);
+            }
+          } catch (parseError) {
+            // If myField is not a valid JSON string, itineraryContent remains responseData.myField
+            console.warn("The content of myField was not a JSON string, or not the expected structure. Displaying as is.", parseError);
+          }
+          setGeneratedItinerary(itineraryContent);
+          toast({
+            title: "Success!",
+            description: t('successMessage'), // This might be shown too early if generation takes time
+            variant: "default",
+          });
+        } else {
+          setGeneratedItinerary(t('unexpectedResponse'));
+          toast({
+            title: "Error",
+            description: t('unexpectedResponse'),
+            variant: "destructive",
+          });
+        }
       } else {
         console.error("Failed to submit form:", response.status, await response.text());
+        setGeneratedItinerary(t('errorMessage'));
         toast({
           title: "Error",
           description: t('errorMessage'),
@@ -249,6 +311,7 @@ export function AiPromptInterface() {
       }
     } catch (error) {
       console.error("Error submitting form:", error);
+      setGeneratedItinerary(t('errorMessage'));
       toast({
         title: "Error",
         description: t('errorMessage'),
@@ -258,6 +321,19 @@ export function AiPromptInterface() {
       setIsLoading(false);
     }
   };
+
+  const handleTryAnotherOne = () => {
+    setGeneratedItinerary(null);
+    setPromptText("");
+    setNumPeople("1");
+    setArrivalDate(new Date()); // Reset to current date
+    setBudgetOption(undefined);
+    setCustomBudget("");
+    setVehicleAvailable(false);
+    setPreferences("");
+    setIsLoading(false);
+  };
+
 
   return (
     <section className="py-8 md:py-12 bg-background">
@@ -273,143 +349,158 @@ export function AiPromptInterface() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 md:p-8">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="space-y-3">
-                <Label htmlFor="ai-prompt" className="text-lg font-medium flex items-center gap-2">
-                  <Search className="h-5 w-5 text-primary" />
-                  {t('tellUsAboutTrip')}
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="ai-prompt"
-                    type="text"
-                    placeholder={t('promptPlaceholder')}
-                    value={promptText}
-                    onChange={(e) => setPromptText(e.target.value)}
-                    className="flex-grow text-base p-3 rounded-lg shadow-sm"
-                    disabled={isLoading}
-                  />
-                  <Button type="submit" size="lg" className="rounded-lg shadow-sm flex items-center gap-2" disabled={isLoading}>
-                    {isLoading ? (
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    ) : (
-                      <Send className="h-5 w-5" />
-                    )}
-                    {t('generateButton')}
-                  </Button>
-                </div>
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <p className="text-xl text-muted-foreground">{t('generatingItinerary')}</p>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t mt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="num-people" className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" />{t('numPeople')}</Label>
-                  <Input
-                    id="num-people"
-                    type="number"
-                    min="1"
-                    value={numPeople}
-                    onChange={(e) => setNumPeople(e.target.value)}
-                    className="rounded-md shadow-sm"
-                    disabled={isLoading}
-                  />
+            ) : generatedItinerary ? (
+              <div className="space-y-6">
+                <h3 className="text-2xl font-semibold text-primary">{t('yourGeneratedItinerary')}</h3>
+                <div className="p-4 border rounded-md bg-muted/10 shadow-inner max-h-[500px] overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed text-foreground">
+                    {generatedItinerary}
+                  </pre>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="arrival-date" className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" />{t('arrivalDateLabel')}</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className="w-full justify-start text-left font-normal rounded-md shadow-sm"
-                        id="arrival-date"
-                        disabled={isLoading}
-                      >
-                        <CalendarDays className="mr-2 h-4 w-4" />
-                        {arrivalDate ? format(arrivalDate, "PPP") : <span>{t('pickADate')}</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={arrivalDate}
-                        onSelect={setArrivalDate}
-                        initialFocus
-                        disabled={isLoading}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="daily-budget" className="flex items-center gap-2"><DollarSign className="h-5 w-5 text-primary" />{t('dailyBudget')}</Label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Select value={budgetOption} onValueChange={setBudgetOption} disabled={isLoading}>
-                      <SelectTrigger className="rounded-md shadow-sm flex-grow">
-                        <SelectValue placeholder={t('selectBudgetRange')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="<50">{t('under50')}</SelectItem>
-                        <SelectItem value="50-100">{t('50-100')}</SelectItem>
-                        <SelectItem value="100-200">{t('100-200')}</SelectItem>
-                        <SelectItem value=">200">{t('over200')}</SelectItem>
-                        <SelectItem value="custom">{t('customAmount')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {budgetOption === "custom" && (
-                      <Input
-                        type="number"
-                        placeholder={t('enterAvgDailyAmount')}
-                        value={customBudget}
-                        onChange={(e) => setCustomBudget(e.target.value)}
-                        className="rounded-md shadow-sm flex-grow"
-                        disabled={isLoading}
-                      />
-                    )}
+                <Button onClick={handleTryAnotherOne} variant="outline" size="lg" className="w-full md:w-auto rounded-lg shadow-sm flex items-center gap-2">
+                  <RotateCcw className="h-5 w-5" />
+                  {t('tryAnotherOne')}
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-3">
+                  <Label htmlFor="ai-prompt" className="text-lg font-medium flex items-center gap-2">
+                    <Search className="h-5 w-5 text-primary" />
+                    {t('tellUsAboutTrip')}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="ai-prompt"
+                      type="text"
+                      placeholder={t('promptPlaceholder')}
+                      value={promptText}
+                      onChange={(e) => setPromptText(e.target.value)}
+                      className="flex-grow text-base p-3 rounded-lg shadow-sm"
+                      disabled={isLoading}
+                      required
+                    />
+                    <Button type="submit" size="lg" className="rounded-lg shadow-sm flex items-center gap-2" disabled={isLoading}>
+                      {isLoading ? (
+                        <Loader2 className="animate-spin h-5 w-5" />
+                      ) : (
+                        <Send className="h-5 w-5" />
+                      )}
+                      {t('generateButton')}
+                    </Button>
                   </div>
                 </div>
-                
-                <div className="space-y-2 flex flex-col items-start">
-                  <Label htmlFor="vehicle-availability" className="flex items-center gap-2"><Car className="h-5 w-5 text-primary" />{t('vehicleAvailability')}</Label>
-                  <div className="flex items-center space-x-2 p-2 border rounded-md shadow-sm bg-background w-full">
-                    <Switch
-                      id="vehicle-availability"
-                      checked={vehicleAvailable}
-                      onCheckedChange={setVehicleAvailable}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t mt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="num-people" className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" />{t('numPeople')}</Label>
+                    <Input
+                      id="num-people"
+                      type="number"
+                      min="1"
+                      value={numPeople}
+                      onChange={(e) => setNumPeople(e.target.value)}
+                      className="rounded-md shadow-sm"
                       disabled={isLoading}
                     />
-                    <Label htmlFor="vehicle-availability" className="text-sm">
-                      {vehicleAvailable ? t('vehicleYes') : t('vehicleNo')}
-                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="arrival-date" className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" />{t('arrivalDateLabel')}</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className="w-full justify-start text-left font-normal rounded-md shadow-sm"
+                          id="arrival-date"
+                          disabled={isLoading}
+                        >
+                          <CalendarDays className="mr-2 h-4 w-4" />
+                          {arrivalDate ? format(arrivalDate, "PPP") : <span>{t('pickADate')}</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={arrivalDate}
+                          onSelect={setArrivalDate}
+                          initialFocus
+                          disabled={isLoading || arrivalDate === undefined} // Disable if initial date not set
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="daily-budget" className="flex items-center gap-2"><DollarSign className="h-5 w-5 text-primary" />{t('dailyBudget')}</Label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Select value={budgetOption} onValueChange={setBudgetOption} disabled={isLoading}>
+                        <SelectTrigger className="rounded-md shadow-sm flex-grow">
+                          <SelectValue placeholder={t('selectBudgetRange')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="&lt;50">{t('under50', '&lt;50')}</SelectItem>
+                          <SelectItem value="50-100">{t('50-100', '50-100')}</SelectItem>
+                          <SelectItem value="100-200">{t('100-200', '100-200')}</SelectItem>
+                          <SelectItem value="&gt;200">{t('over200', '&gt;200')}</SelectItem>
+                          <SelectItem value="custom">{t('customAmount')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {budgetOption === "custom" && (
+                        <Input
+                          type="number"
+                          placeholder={t('enterAvgDailyAmount')}
+                          value={customBudget}
+                          onChange={(e) => setCustomBudget(e.target.value)}
+                          className="rounded-md shadow-sm flex-grow"
+                          disabled={isLoading}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 flex flex-col items-start">
+                    <Label htmlFor="vehicle-availability" className="flex items-center gap-2"><Car className="h-5 w-5 text-primary" />{t('vehicleAvailability')}</Label>
+                    <div className="flex items-center space-x-2 p-2 border rounded-md shadow-sm bg-card w-full">
+                      <Switch
+                        id="vehicle-availability"
+                        checked={vehicleAvailable}
+                        onCheckedChange={setVehicleAvailable}
+                        disabled={isLoading}
+                      />
+                      <Label htmlFor="vehicle-availability" className="text-sm cursor-pointer">
+                        {vehicleAvailable ? t('vehicleYes') : t('vehicleNo')}
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="preferences" className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />{t('preferences')}</Label>
+                    <Textarea
+                      id="preferences"
+                      placeholder={t('preferencesPlaceholder')}
+                      value={preferences}
+                      onChange={(e) => setPreferences(e.target.value)}
+                      className="min-h-[100px] rounded-md shadow-sm"
+                      disabled={isLoading}
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="preferences" className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />{t('preferences')}</Label>
-                  <Textarea
-                    id="preferences"
-                    placeholder={t('preferencesPlaceholder')}
-                    value={preferences}
-                    onChange={(e) => setPreferences(e.target.value)}
-                    className="min-h-[100px] rounded-md shadow-sm"
-                    disabled={isLoading}
-                  />
+                <div className="pt-6 border-t mt-6">
+                  <p className="text-sm text-muted-foreground italic leading-relaxed">
+                    {t('aiSystemDescription')}
+                  </p>
                 </div>
-              </div>
-
-              <div className="pt-6 border-t mt-6">
-                <p className="text-sm text-muted-foreground italic leading-relaxed">
-                  {t('aiSystemDescription')}
-                </p>
-              </div>
-            </form>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
     </section>
   );
-}
-
-    
