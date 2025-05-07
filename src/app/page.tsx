@@ -1,3 +1,6 @@
+
+'use client'; // Converted to client component to use LanguageContext
+
 import { AppHeader } from '@/components/shared/AppHeader';
 import { AiPromptInterface } from '@/components/sections/AiPromptInterface';
 import { InteractiveMap } from '@/components/sections/InteractiveMap';
@@ -6,8 +9,26 @@ import { EventsSection } from '@/components/sections/EventsSection';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Lightbulb } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext'; // Import useLanguage
+import type { ReactNode } from 'react';
+
+// Placeholder for translations
+const footerTexts: Record<string, string> = {
+  en: 'All rights reserved.',
+  it: 'Tutti i diritti riservati.',
+  de: 'Alle Rechte vorbehalten.',
+  pl: 'Wszelkie prawa zastrzeżone.',
+  fr: 'Tous droits réservés.',
+  es: 'Todos los derechos reservados.',
+};
+
 
 export default function HomePage() {
+  const { selectedLanguage } = useLanguage(); // Use the language context
+
+  const currentYear = new Date().getFullYear();
+  const localizedFooterText: ReactNode = footerTexts[selectedLanguage] || footerTexts.en;
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
@@ -30,7 +51,7 @@ export default function HomePage() {
       <footer className="py-8 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Stibar. All rights reserved.
+            &copy; {currentYear} Stibar. {localizedFooterText}
           </p>
         </div>
       </footer>
