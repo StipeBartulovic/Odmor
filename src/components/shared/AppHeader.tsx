@@ -6,7 +6,7 @@ export function AppHeader() {
       <div className="container mx-auto px-4 flex items-center gap-3">
         <PlaneTakeoff className="h-10 w-10 text-primary" />
         <h1 className="text-4xl font-bold text-primary tracking-tight">
-          WanderAI
+          Stibar
         </h1>
       </div>
     </header>

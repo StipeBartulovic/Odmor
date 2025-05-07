@@ -144,11 +144,10 @@ export default function TipsPage() {
       <footer className="py-8 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} WanderAI. All rights reserved.
+            &copy; {new Date().getFullYear()} Stibar. All rights reserved.
           </p>
         </div>
       </footer>
     </div>
   );
 }
-

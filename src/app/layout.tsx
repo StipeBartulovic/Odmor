@@ -8,7 +8,7 @@ const geistSans = GeistSans;
 // const geistMono = GeistMono; // geist/font/mono is not installed
 
 export const metadata: Metadata = {
-  title: 'WanderAI - Your Personal Travel Assistant',
+  title: 'Stibar - Your Personal Travel Assistant',
   description: 'Generate personalized travel itineraries with AI.',
 };
 
