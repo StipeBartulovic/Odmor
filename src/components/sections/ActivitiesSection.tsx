@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { ActivityCard } from '@/components/shared/ActivityCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Mountain, Waves, Trees, Building, Ticket, Zap, VenetianMask } from 'lucide-react';
+import { Mountain, Waves, Trees, Building, Ticket, Zap, VenetianMask, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 
@@ -51,6 +51,14 @@ const translations = {
     fr: 'Aucune activité payante répertoriée actuellement.',
     es: 'No hay actividades de pago listadas actualmente.',
   },
+  loading: {
+    en: 'Loading activities...',
+    it: 'Caricamento attività...',
+    de: 'Lade Aktivitäten...',
+    pl: 'Ładowanie aktywności...',
+    fr: 'Chargement des activités...',
+    es: 'Cargando actividades...',
+  }
 };
 
 const getActivityIcon = (activityName: string): React.ElementType => {
@@ -68,25 +76,49 @@ const getActivityIcon = (activityName: string): React.ElementType => {
 export function ActivitiesSection() {
   const { selectedLanguage } = useLanguage();
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
   
-  const t = (field: keyof typeof translations): string => {
-     // @ts-ignore
-    return translations[field][selectedLanguage] || translations[field]['en'];
-  };
-
   useEffect(() => {
+    setIsMounted(true);
     async function loadActivities() {
       const fetchedActivities = await getActivities();
       // For demo: Add more diverse activities. These names/descriptions would also need translation.
       const demoActivities: Activity[] = [
-        { name: "Coastal Trail Hike", description: "Enjoy breathtaking views on this scenic coastal hike.", iconUrl: "https://picsum.photos/300/200?random=hike", isFree: true },
-        { name: "City Museum Visit", description: "Explore local history and art at the city museum.", iconUrl: "https://picsum.photos/300/200?random=museum", isFree: false },
-        { name: "Sunset Beach Yoga", description: "Relax and rejuvenate with a yoga session on the beach.", iconUrl: "https://picsum.photos/300/200?random=yoga", isFree: true },
+        { name: "Coastal Trail Hike", description: "Enjoy breathtaking views on this scenic coastal hike.", iconUrl: "https://picsum.photos/300/200?random=hike", isFree: true, dataAiHint: "coastal hike" },
+        { name: "City Museum Visit", description: "Explore local history and art at the city museum.", iconUrl: "https://picsum.photos/300/200?random=museum", isFree: false, dataAiHint: "city museum" },
+        { name: "Sunset Beach Yoga", description: "Relax and rejuvenate with a yoga session on the beach.", iconUrl: "https://picsum.photos/300/200?random=yoga", isFree: true, dataAiHint: "beach yoga" },
       ];
       setActivities([...fetchedActivities, ...demoActivities]);
     }
     loadActivities();
   }, []);
+  
+  const t = (fieldKey: keyof typeof translations): string => {
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    // @ts-ignore
+    return translations[fieldKey][langToUse] || translations[fieldKey]['en'];
+  };
+
+  if (!isMounted) {
+    return (
+      <section className="py-8 md:py-12 bg-background">
+        <div className="container mx-auto px-4">
+          <Card className="shadow-xl rounded-xl">
+            <CardHeader className="bg-muted/50 p-6">
+               <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
+            </CardHeader>
+            <CardContent className="p-6 md:p-8">
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="ml-4 text-lg text-muted-foreground">{t('loading')}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    );
+  }
+
 
   const freeActivities = activities.filter(activity => activity.isFree);
   const paidActivities = activities.filter(activity => !activity.isFree);

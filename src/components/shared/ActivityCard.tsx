@@ -8,9 +8,10 @@ import Image from 'next/image';
 import { DollarSign, Leaf, Palette, Info } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ActivityCardProps {
-  activity: Activity; // Activity name/description would need to be translated upstream or passed as translated
+  activity: Activity; 
   icon?: React.ElementType;
 }
 
@@ -43,16 +44,38 @@ const translations = {
 
 export function ActivityCard({ activity, icon: IconComponent = Palette }: ActivityCardProps) {
   const { selectedLanguage } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
-  const t = (field: keyof typeof translations): string => {
-     // @ts-ignore
-    return translations[field][selectedLanguage] || translations[field]['en'];
+  const t = (fieldKey: keyof typeof translations): string => {
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    // @ts-ignore
+    return translations[fieldKey][langToUse] || translations[fieldKey]['en'];
   };
 
-  // Activity name and description are assumed to come from the `activity` prop.
-  // For full translation, these would need to be structured with translations,
-  // e.g., activity.name.en, activity.name.it, etc.
-  // For this example, we'll display them as is.
+  // For activity name and description, we rely on them being passed correctly (potentially already translated if needed)
+  // Or, if they were structured like { en: "Name", it: "Nome" }, we'd use getLocalizedText(activity.name)
+  // For now, we display them as they are from the `activity` prop.
+
+  if (!isMounted) {
+    // Basic skeleton for the card to avoid layout shifts and hydration errors
+    return (
+      <Card className="shadow-lg rounded-xl">
+        <div className="p-4">
+          <div className="flex items-center gap-4 w-full">
+            <div className="p-3 bg-muted/10 rounded-lg h-14 w-14 animate-pulse"></div>
+            <div className="flex-grow text-left">
+              <div className="h-5 bg-muted rounded w-3/4 animate-pulse"></div>
+              <div className="h-4 bg-muted rounded w-1/4 mt-2 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-lg rounded-xl hover:shadow-xl transition-shadow duration-300">
@@ -64,7 +87,7 @@ export function ActivityCard({ activity, icon: IconComponent = Palette }: Activi
                 <IconComponent className="h-8 w-8 text-primary" />
               </div>
               <div className="flex-grow text-left">
-                <h3 className="text-lg font-semibold text-foreground">{activity.name}</h3> {/* Untranslated from prop */}
+                <h3 className="text-lg font-semibold text-foreground">{activity.name}</h3>
                 <Badge variant={activity.isFree ? "secondary" : "default"} className="mt-1 text-xs">
                   {activity.isFree ? <Leaf className="mr-1 h-3 w-3" /> : <DollarSign className="mr-1 h-3 w-3" />}
                   {activity.isFree ? t('free') : t('paid')}
@@ -77,14 +100,14 @@ export function ActivityCard({ activity, icon: IconComponent = Palette }: Activi
               {activity.iconUrl && activity.iconUrl.startsWith('https://picsum.photos') && (
                  <Image
                     src={activity.iconUrl}
-                    alt={activity.name} // Untranslated from prop
+                    alt={activity.name} 
                     width={300}
                     height={200}
                     className="rounded-md object-cover w-full aspect-[16/10]"
-                    data-ai-hint="activity outdoor"
+                    data-ai-hint={activity.dataAiHint || "activity outdoor"}
                   />
               )}
-              <p className="text-sm text-muted-foreground leading-relaxed">{activity.description}</p> {/* Untranslated from prop */}
+              <p className="text-sm text-muted-foreground leading-relaxed">{activity.description}</p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
                 <Info className="h-4 w-4" />
                 <span>{t('detailsPlaceholder')}</span>

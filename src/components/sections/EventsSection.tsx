@@ -5,8 +5,8 @@ import { getLocalEvents } from '@/services/events';
 import { useEffect, useState } from 'react';
 import { EventCard } from '@/components/shared/EventCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Filter, CalendarSearch } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Filter, CalendarSearch, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 
@@ -35,19 +35,24 @@ const translations = {
     fr: 'Aucun événement local répertorié pour le moment. Revenez bientôt !',
     es: 'No hay eventos locales listados en este momento. ¡Vuelve pronto!',
   },
+  loading: {
+    en: 'Loading events...',
+    it: 'Caricamento eventi...',
+    de: 'Lade Veranstaltungen...',
+    pl: 'Ładowanie wydarzeń...',
+    fr: 'Chargement des événements...',
+    es: 'Cargando eventos...',
+  }
 };
 
 export function EventsSection() {
   const { selectedLanguage } = useLanguage();
   const [events, setEvents] = useState<LocalEvent[]>([]);
   const [initialEventsLoaded, setInitialEventsLoaded] = useState(false);
-
-  const t = (field: keyof typeof translations): string => {
-     // @ts-ignore
-    return translations[field][selectedLanguage] || translations[field]['en'];
-  };
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     async function loadEvents() {
       const fetchedEvents = await getLocalEvents();
       // For demo: Event names/descriptions would also need translation.
@@ -62,6 +67,33 @@ export function EventsSection() {
         loadEvents();
     }
   }, [initialEventsLoaded]);
+  
+  const t = (fieldKey: keyof typeof translations): string => {
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    // @ts-ignore
+    return translations[fieldKey][langToUse] || translations[fieldKey]['en'];
+  };
+
+  if (!isMounted) {
+     return (
+      <section className="py-8 md:py-12 bg-background">
+        <div className="container mx-auto px-4">
+          <Card className="shadow-xl rounded-xl">
+            <CardHeader className="bg-muted/50 p-6 flex flex-row items-center justify-between">
+              <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
+              <div className="h-8 w-20 bg-muted rounded animate-pulse"></div>
+            </CardHeader>
+            <CardContent className="p-6 md:p-8">
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                 <p className="ml-4 text-lg text-muted-foreground">{t('loading')}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-8 md:py-12 bg-background">

@@ -18,6 +18,10 @@ export interface Activity {
    * Whether the activity is free or paid.
    */
   isFree: boolean;
+  /**
+   * AI hint for image generation for this activity.
+   */
+  dataAiHint?: string;
 }
 
 /**
@@ -32,14 +36,16 @@ export async function getActivities(): Promise<Activity[]> {
     {
       name: 'Example Nature Walk',
       description: 'A walk in nature.',
-      iconUrl: 'https://example.com/nature-walk.png',
+      iconUrl: 'https://picsum.photos/300/200?random=naturewalk',
       isFree: true,
+      dataAiHint: 'nature walk'
     },
     {
-      name: 'Example Museum',
+      name: 'Example Museum Visit',
       description: 'A visit to a museum.',
-      iconUrl: 'https://example.com/museum.png',
+      iconUrl: 'https://picsum.photos/300/200?random=museumvisit',
       isFree: false,
+      dataAiHint: 'museum art'
     },
   ];
 }

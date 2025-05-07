@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -8,7 +8,8 @@ import { tipsData, type TipCategory, type Tip } from '@/data/tips';
 import { 
   Globe, Lightbulb, Wrench, CarFront, PlugZap, Utensils, Umbrella, Info, ExternalLink,
   ShieldAlert, Droplets, Landmark, Activity as ActivityIcon, Clock, Smartphone, Phone, TrafficCone, Ship, Bike, Squirrel,
-  Power, BatteryCharging, Plug, Coins, Receipt, CigaretteOff, MessageSquare, Languages, Sun, Footprints, Ticket, ArrowLeft
+  Power, BatteryCharging, Plug, Coins, Receipt, CigaretteOff, MessageSquare, Languages, Sun, Footprints, Ticket, ArrowLeft,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -102,6 +103,14 @@ const pageTranslations = {
     pl: 'Wszelkie prawa zastrzeżone.',
     fr: 'Tous droits réservés.',
     es: 'Todos los derechos reservados.',
+  },
+  loading: {
+    en: 'Loading tips...',
+    it: 'Caricamento consigli...',
+    de: 'Lade Tipps...',
+    pl: 'Ładowanie wskazówek...',
+    fr: 'Chargement des conseils...',
+    es: 'Cargando consejos...',
   }
 };
 
@@ -145,21 +154,44 @@ const getIcon = (iconName?: string): React.ElementType => {
 export default function TipsPage() {
   const router = useRouter();
   const { selectedLanguage } = useLanguage();
+  const [isMounted, setIsMounted] = useState(false);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
 
-  const localizedTitle: ReactNode = pageTranslations.title[selectedLanguage] || pageTranslations.title.en;
-  const localizedSubtitle: ReactNode = pageTranslations.subtitle[selectedLanguage] || pageTranslations.subtitle.en;
-  const localizedBackButton: ReactNode = pageTranslations.goBackButton[selectedLanguage] || pageTranslations.goBackButton.en;
-  const localizedDidYouKnowTitle: ReactNode = pageTranslations.didYouKnowTitle[selectedLanguage] || pageTranslations.didYouKnowTitle.en;
-  const localizedDidYouKnowContent: string[] = pageTranslations.didYouKnowContent[selectedLanguage] || pageTranslations.didYouKnowContent.en;
-  const localizedMoreTipsFooter: ReactNode = pageTranslations.moreTipsFooter[selectedLanguage] || pageTranslations.moreTipsFooter.en;
-  
-  const currentYear = new Date().getFullYear();
-  const localizedFooterRights: ReactNode = pageTranslations.footerRights[selectedLanguage] || pageTranslations.footerRights.en;
-  
-  const getLocalizedText = (textObj: Record<string, string> | undefined) => {
-    if (!textObj) return '';
-    return textObj[selectedLanguage] || textObj.en || '';
+  useEffect(() => {
+    setIsMounted(true);
+    setCurrentYear(new Date().getFullYear());
+  }, []);
+
+  const t = (fieldKey: keyof typeof pageTranslations, contentKey?: keyof typeof pageTranslations[keyof typeof pageTranslations]): string | string[] => {
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    // @ts-ignore
+    const fieldTranslations = pageTranslations[fieldKey];
+
+    if (contentKey && typeof fieldTranslations === 'object' && fieldTranslations.hasOwnProperty(contentKey)) {
+        // @ts-ignore
+      return fieldTranslations[contentKey][langToUse] || fieldTranslations[contentKey]['en'];
+    }
+    // @ts-ignore
+    return fieldTranslations[langToUse] || fieldTranslations['en'];
   };
+  
+  const getLocalizedText = (textObj: Record<string, string> | undefined): string => {
+    if (!textObj) return '';
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    return textObj[langToUse] || textObj.en || '';
+  };
+
+  if (!isMounted || currentYear === null) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <p className="text-xl text-muted-foreground mt-4">{t('loading') as string}</p>
+      </div>
+    );
+  }
+
+  const localizedDidYouKnowContent: string[] = t('didYouKnowContent') as string[];
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -168,17 +200,17 @@ export default function TipsPage() {
         <div className="mb-8">
           <Button variant="outline" onClick={() => router.back()} className="rounded-lg shadow-sm">
             <ArrowLeft className="mr-2 h-5 w-5" />
-            {localizedBackButton}
+            {t('goBackButton') as string}
           </Button>
         </div>
 
         <header className="text-center space-y-4 mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-primary flex items-center justify-center gap-3">
             <Globe className="h-10 w-10" />
-            {localizedTitle}
+            {t('title') as string}
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            {localizedSubtitle}
+            {t('subtitle') as string}
           </p>
         </header>
 
@@ -230,7 +262,7 @@ export default function TipsPage() {
           <CardHeader className="bg-muted/30 p-4 md:p-6">
             <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
               <Info className="h-7 w-7" />
-              {localizedDidYouKnowTitle}
+              {t('didYouKnowTitle') as string}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-6 text-muted-foreground space-y-2">
@@ -240,7 +272,7 @@ export default function TipsPage() {
                 <li key={idx}>{fact}</li>
               ))}
             </ul>
-            <p className="text-xs italic mt-4">{localizedMoreTipsFooter}</p>
+            <p className="text-xs italic mt-4">{t('moreTipsFooter') as string}</p>
           </CardContent>
         </Card>
 
@@ -248,7 +280,7 @@ export default function TipsPage() {
       <footer className="py-8 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} Stibar. {localizedFooterRights}
+            &copy; {currentYear} Stibar. {t('footerRights') as string}
           </p>
         </div>
       </footer>

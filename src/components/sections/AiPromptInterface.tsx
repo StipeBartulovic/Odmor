@@ -222,21 +222,25 @@ export function AiPromptInterface() {
   const [promptText, setPromptText] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [generatedItinerary, setGeneratedItinerary] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
 
   useEffect(() => {
-    // Initialize arrivalDate only on client-side to avoid hydration issues
+    setIsMounted(true);
     setArrivalDate(new Date());
   }, []);
   
-  const t = (field: keyof typeof translations, subField?: string): string => {
-    const dict = translations[field];
-    if (subField && typeof dict === 'object' && dict.hasOwnProperty(subField)) {
-         // @ts-ignore
-        return dict[subField][selectedLanguage] || dict[subField]['en'];
+  const t = (fieldKey: keyof typeof translations, subField?: string): string => {
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    const fieldTranslations = translations[fieldKey];
+  
+    if (subField && typeof fieldTranslations === 'object' && fieldTranslations.hasOwnProperty(subField)) {
+      // @ts-ignore
+      const subFieldTranslations = fieldTranslations[subField];
+      return subFieldTranslations[langToUse] || subFieldTranslations['en'];
     }
-     // @ts-ignore
-    return dict[selectedLanguage] || dict['en'];
+    // @ts-ignore
+    return fieldTranslations[langToUse] || fieldTranslations['en'];
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -270,26 +274,64 @@ export function AiPromptInterface() {
 
         if (responseData && responseData.myField && typeof responseData.myField === 'string') {
           let itineraryContent = responseData.myField;
-          try {
-            // Attempt to parse myField's content if it's a JSON string
-            const parsedFieldValue = JSON.parse(itineraryContent);
-            // Check if it's the expected array structure with an 'output' field
-            if (Array.isArray(parsedFieldValue) && parsedFieldValue.length > 0 && 
-                typeof parsedFieldValue[0] === 'object' && parsedFieldValue[0] !== null && 
-                'output' in parsedFieldValue[0] && typeof parsedFieldValue[0].output === 'string') {
-              itineraryContent = parsedFieldValue[0].output;
-            } else {
-              // If it's some other valid JSON, pretty-print it
-              itineraryContent = JSON.stringify(parsedFieldValue, null, 2);
+           // Check if myField contains the specific template string
+           if (itineraryContent.includes("{{") && itineraryContent.includes("JSON.stringify($json.output)") && itineraryContent.includes("}}")) {
+            // Attempt to extract and parse the actual JSON content from the template string
+            // This is a heuristic and might need adjustment based on the exact format of $json.output
+            try {
+                // A very basic extraction, assuming $json.output is the only thing inside JSON.stringify()
+                const jsonOutputString = itineraryContent.match(/JSON\.stringify\((.*)\)/)?.[1];
+                if (jsonOutputString) {
+                    // If $json.output itself is a string that needs to be evaluated (e.g. a stringified JSON)
+                    // This part is tricky as it depends on what $json.output actually is.
+                    // For now, let's assume $json.output is already the direct string content we want,
+                    // or it's a JSON string that needs parsing.
+                    // If $json.output is a stringified JSON of the array: "[{\"output\":\"...\"}]"
+                    // Then JSON.parse(jsonOutputString) would give that string.
+                    // Then another JSON.parse would parse that string into the array.
+                    
+                    // Let's assume n8n's $json.output is already the direct content we want to display.
+                    // If it's meant to be the actual complex object like [{ "output": "..." }],
+                    // then the n8n side should simply return $json.output, not stringify it again.
+
+                    // For the given example output: [{"output":"..."}]
+                    // If responseData.myField is LITERALLY the string "[{\"output\":\"...\"}]"
+                    // then this parsing logic is what you need:
+                    const parsedArray = JSON.parse(itineraryContent);
+                    if (Array.isArray(parsedArray) && parsedArray.length > 0 && parsedArray[0].output) {
+                        itineraryContent = parsedArray[0].output;
+                    } else {
+                         // If it's some other valid JSON, pretty-print it
+                        itineraryContent = JSON.stringify(parsedArray, null, 2);
+                    }
+                } else {
+                  // If regex fails, fallback to displaying as is.
+                  itineraryContent = responseData.myField;
+                }
+            } catch (parseError) {
+                console.warn("Failed to parse the extracted JSON content from myField. Displaying as is.", parseError);
+                itineraryContent = responseData.myField; // Fallback
             }
-          } catch (parseError) {
-            // If myField is not a valid JSON string, itineraryContent remains responseData.myField
-            console.warn("The content of myField was not a JSON string, or not the expected structure. Displaying as is.", parseError);
-          }
+        } else {
+             // If myField is not the template string, try to parse it directly as JSON
+            try {
+                const parsedDirect = JSON.parse(itineraryContent);
+                 if (Array.isArray(parsedDirect) && parsedDirect.length > 0 && parsedDirect[0].output) {
+                    itineraryContent = parsedDirect[0].output;
+                } else {
+                    itineraryContent = JSON.stringify(parsedDirect, null, 2);
+                }
+            } catch (directParseError) {
+                // If it's not JSON, and not the template, display as is
+                // This means itineraryContent already holds the direct string value
+            }
+        }
+
+
           setGeneratedItinerary(itineraryContent);
           toast({
             title: "Success!",
-            description: t('successMessage'), // This might be shown too early if generation takes time
+            description: t('successMessage'),
             variant: "default",
           });
         } else {
@@ -302,7 +344,8 @@ export function AiPromptInterface() {
         }
       } else {
         console.error("Failed to submit form:", response.status, await response.text());
-        setGeneratedItinerary(t('errorMessage'));
+        const errorText = await response.text();
+        setGeneratedItinerary(`${t('errorMessage')} Server response: ${errorText}`);
         toast({
           title: "Error",
           description: t('errorMessage'),
@@ -326,13 +369,37 @@ export function AiPromptInterface() {
     setGeneratedItinerary(null);
     setPromptText("");
     setNumPeople("1");
-    setArrivalDate(new Date()); // Reset to current date
+    if (isMounted) setArrivalDate(new Date());
+    else setArrivalDate(undefined);
     setBudgetOption(undefined);
     setCustomBudget("");
     setVehicleAvailable(false);
     setPreferences("");
     setIsLoading(false);
   };
+
+  if (!isMounted) {
+    // Render a loader or minimal skeleton to prevent hydration mismatch
+    // You can customize this loader.
+    return (
+      <section className="py-8 md:py-12 bg-background">
+        <div className="container mx-auto px-4">
+          <Card className="shadow-xl rounded-xl overflow-hidden">
+            <CardHeader className="bg-muted/50 p-6">
+              <div className="h-8 bg-muted rounded w-3/4 animate-pulse"></div>
+              <div className="h-4 bg-muted rounded w-1/2 mt-2 animate-pulse"></div>
+            </CardHeader>
+            <CardContent className="p-6 md:p-8">
+              <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <p className="text-xl text-muted-foreground">{t('generatingItinerary')}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    );
+  }
 
 
   return (
@@ -418,19 +485,19 @@ export function AiPromptInterface() {
                           variant={"outline"}
                           className="w-full justify-start text-left font-normal rounded-md shadow-sm"
                           id="arrival-date"
-                          disabled={isLoading}
+                          disabled={isLoading || !isMounted}
                         >
                           <CalendarDays className="mr-2 h-4 w-4" />
-                          {arrivalDate ? format(arrivalDate, "PPP") : <span>{t('pickADate')}</span>}
+                          {isMounted && arrivalDate ? format(arrivalDate, "PPP") : <span>{t('pickADate')}</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={arrivalDate}
+                          selected={isMounted ? arrivalDate : undefined}
                           onSelect={setArrivalDate}
                           initialFocus
-                          disabled={isLoading || arrivalDate === undefined} // Disable if initial date not set
+                          disabled={isLoading || !isMounted}
                         />
                       </PopoverContent>
                     </Popover>
@@ -439,7 +506,7 @@ export function AiPromptInterface() {
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="daily-budget" className="flex items-center gap-2"><DollarSign className="h-5 w-5 text-primary" />{t('dailyBudget')}</Label>
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <Select value={budgetOption} onValueChange={setBudgetOption} disabled={isLoading}>
+                      <Select value={budgetOption} onValueChange={setBudgetOption} disabled={isLoading || !isMounted}>
                         <SelectTrigger className="rounded-md shadow-sm flex-grow">
                           <SelectValue placeholder={t('selectBudgetRange')} />
                         </SelectTrigger>
@@ -471,7 +538,7 @@ export function AiPromptInterface() {
                         id="vehicle-availability"
                         checked={vehicleAvailable}
                         onCheckedChange={setVehicleAvailable}
-                        disabled={isLoading}
+                        disabled={isLoading || !isMounted}
                       />
                       <Label htmlFor="vehicle-availability" className="text-sm cursor-pointer">
                         {vehicleAvailable ? t('vehicleYes') : t('vehicleNo')}
@@ -504,3 +571,4 @@ export function AiPromptInterface() {
       </div>
     </section>
   );
+}

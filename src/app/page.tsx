@@ -1,4 +1,4 @@
-'use client'; // Converted to client component to use LanguageContext
+'use client'; 
 
 import { AppHeader } from '@/components/shared/AppHeader';
 import { AiPromptInterface } from '@/components/sections/AiPromptInterface';
@@ -7,9 +7,10 @@ import { ActivitiesSection } from '@/components/sections/ActivitiesSection';
 import { EventsSection } from '@/components/sections/EventsSection';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 
 const pageTranslations = {
   tipsButton: {
@@ -27,17 +28,43 @@ const pageTranslations = {
     pl: 'Wszelkie prawa zastrzeżone.',
     fr: 'Tous droits réservés.',
     es: 'Todos los derechos reservados.',
+  },
+  loading: {
+    en: 'Loading content...',
+    it: 'Caricamento dei contenuti...',
+    de: 'Inhalt wird geladen...',
+    pl: 'Ładowanie treści...',
+    fr: 'Chargement du contenu...',
+    es: 'Cargando contenido...',
   }
 };
 
 
 export default function HomePage() {
   const { selectedLanguage } = useLanguage(); 
+  const [isMounted, setIsMounted] = useState(false);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
 
-  const currentYear = new Date().getFullYear();
+  useEffect(() => {
+    setIsMounted(true);
+    setCurrentYear(new Date().getFullYear());
+  }, []);
   
-  const localizedTipsButtonText: ReactNode = pageTranslations.tipsButton[selectedLanguage] || pageTranslations.tipsButton.en;
-  const localizedFooterText: ReactNode = pageTranslations.footerRights[selectedLanguage] || pageTranslations.footerRights.en;
+  const t = (fieldKey: keyof typeof pageTranslations): string => {
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    // @ts-ignore
+    return pageTranslations[fieldKey][langToUse] || pageTranslations[fieldKey]['en'];
+  };
+  
+  if (!isMounted || currentYear === null) {
+    // Render a loader or minimal skeleton to prevent hydration mismatch
+    return (
+      <div className="flex flex-col min-h-screen bg-background items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -52,7 +79,7 @@ export default function HomePage() {
           <Link href="/tips" passHref>
             <Button size="lg" className="rounded-xl shadow-lg px-8 py-6 text-lg" variant="outline">
               <Lightbulb className="mr-3 h-6 w-6 text-accent" />
-              {localizedTipsButtonText}
+              {t('tipsButton')}
             </Button>
           </Link>
         </section>
@@ -60,7 +87,7 @@ export default function HomePage() {
       <footer className="py-8 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} Stibar. {localizedFooterText}
+            &copy; {currentYear} Stibar. {t('footerRights')}
           </p>
         </div>
       </footer>
