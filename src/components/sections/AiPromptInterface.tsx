@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { FormEvent } from 'react';
@@ -168,6 +167,47 @@ const translations = {
   },
 };
 
+const renderItinerary = (text: string) => {
+  if (!text) return null;
+  // Split into blocks based on one or more empty lines (common for paragraph separation)
+  const blocks = text.split(/\n\s*\n+/);
+
+  return blocks.map((block, blockIndex) => {
+    const lines = block.trim().split('\n');
+    if (lines.length === 0 || (lines.length === 1 && lines[0].trim() === '')) return null; // Skip empty blocks
+
+    // Check first line for heading
+    const firstLine = lines[0];
+    const isFirstLineHeading = firstLine.endsWith(':') ||
+                             (firstLine.length < 70 && firstLine === firstLine.toUpperCase() && firstLine.trim() !== '' && !/^\d+\./.test(firstLine) && !firstLine.toLowerCase().includes('enjoy your') && !firstLine.toLowerCase().includes('hope you'));
+
+
+    return (
+      <div key={blockIndex} className="mb-4"> {/* Paragraph block */}
+        {isFirstLineHeading ? (
+          <>
+            <h3 className="font-semibold text-lg mt-1 mb-2 text-primary">
+              {firstLine}
+            </h3>
+            {lines.slice(1).map((line, lineIndex) => (
+              <p key={lineIndex} className="text-foreground mb-1 leading-relaxed">
+                {line}
+              </p>
+            ))}
+          </>
+        ) : (
+          // If first line is not a heading, treat all lines as part of a regular paragraph
+          lines.map((line, lineIndex) => (
+            <p key={lineIndex} className="text-foreground mb-1 leading-relaxed">
+              {line}
+            </p>
+          ))
+        )}
+      </div>
+    );
+  });
+};
+
 
 export function AiPromptInterface() {
   const { selectedLanguage } = useLanguage();
@@ -243,38 +283,49 @@ export function AiPromptInterface() {
         throw new Error(`${t('errorFetching')}: ${response.status} - ${errorData}`);
       }
 
-      const data: { myField: string } = await response.json();
+      // The n8n workflow now returns an array like: [{ "output": "itinerary string..." }]
+      // And myField should be the key holding the string "{{ $json.output }}"
+      // Which in n8n resolves to the stringified version of $json.output
+      const responseData: { myField: string } | [{ output: string }] = await response.json();
       
-      if (data && data.myField) {
-        // The n8n workflow returns a string in "myField".
-        // This string *might* be a JSON string itself (e.g., if $json.output was an object/array)
-        // or it might be a plain text string.
-        let itineraryContentToDisplay = data.myField;
+      let rawItineraryString: string | undefined;
 
+      if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].output) {
+        // This handles the case where n8n's final "Respond to Webhook" node
+        // is set to output: {"output": "{{ $json.somePreviousNode.output }}"}
+        // and $json.somePreviousNode.output was the actual itinerary string.
+        rawItineraryString = responseData[0].output;
+      } else if (typeof responseData === 'object' && responseData !== null && 'myField' in responseData) {
+         // This handles the case where n8n's final "Respond to Webhook" node
+         // is set to output: {"myField": "{{ JSON.stringify($json.output) }}"}
+         // or {"myField": "direct string output from a node"}
+        const tempField = (responseData as { myField: string }).myField;
         try {
-            // Attempt to parse the content of myField.
-            // If $json.output in n8n was an object/array, data.myField would be its stringified version.
-            const parsedMyField = JSON.parse(data.myField);
-
-            // If parsing is successful and the result is an object/array,
-            // then we re-stringify it with pretty printing for display.
-            if (typeof parsedMyField === 'object' && parsedMyField !== null) {
-                itineraryContentToDisplay = JSON.stringify(parsedMyField, null, 2);
+            // If myField contains a stringified JSON (e.g. from {{ JSON.stringify($json.output) }} where $json.output was an object/array)
+            // we parse it. If $json.output was an array like [{ "output": "actual_text" }], we extract "actual_text".
+            const parsedMyField = JSON.parse(tempField);
+            if (Array.isArray(parsedMyField) && parsedMyField.length > 0 && parsedMyField[0].output) {
+                rawItineraryString = parsedMyField[0].output;
+            } else if (typeof parsedMyField === 'string') {
+                // If myField contained a stringified simple string.
+                rawItineraryString = parsedMyField;
             } else {
-                // If it parsed to a primitive (string, number, boolean), use its string representation.
-                // This handles cases where $json.output was a primitive that got stringified.
-                itineraryContentToDisplay = String(parsedMyField);
+                 // If myField contained a stringified object/array that doesn't match the [{output: "..."}] structure
+                rawItineraryString = tempField; // Fallback to using the content of myField as is
             }
         } catch (e) {
-            // If JSON.parse(data.myField) fails, it means data.myField was already a plain string
-            // (e.g., $json.output in n8n was a direct text string).
-            // In this case, we use data.myField as is.
-            itineraryContentToDisplay = data.myField;
+            // If JSON.parse(tempField) fails, it means tempField was already a plain string.
+            rawItineraryString = tempField;
         }
-        setItinerary(itineraryContentToDisplay);
+      }
+
+
+      if (rawItineraryString) {
+        setItinerary(rawItineraryString);
       } else {
         setItinerary(t('noItinerary'));
       }
+
     } catch (err: any) {
       console.error('Error in handleSubmit:', err);
       setError(err.message || t('errorFetching'));
@@ -343,9 +394,9 @@ export function AiPromptInterface() {
               </div>
             ) : itinerary ? (
               <div className="space-y-6">
-                <pre className="bg-muted/30 p-4 rounded-lg whitespace-pre-wrap text-sm md:text-base leading-relaxed font-sans text-foreground">
-                  {itinerary}
-                </pre>
+                <div className="bg-muted/30 p-4 rounded-lg text-sm md:text-base font-sans">
+                  {renderItinerary(itinerary)}
+                </div>
                 <Button onClick={handleTryAnother} size="lg" className="rounded-lg shadow-md w-full md:w-auto mx-auto flex items-center gap-2">
                   <RotateCcw className="h-5 w-5" />
                   {t('tryAnotherButton')}
