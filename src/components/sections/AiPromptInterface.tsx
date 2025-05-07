@@ -1,6 +1,6 @@
 "use client";
 
-import *import type { FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ export function AiPromptInterface() {
   const [customBudget, setCustomBudget] = useState<string>("");
   const [vehicleAvailable, setVehicleAvailable] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<string>("");
-  const [prompt, setPrompt] = useState<string>("");
+  const [promptText, setPromptText] = useState<string>(""); // Renamed from prompt to avoid conflict with Genkit prompt
 
   // Effect to set initial arrivalDate to today to avoid hydration mismatch
   useEffect(() => {
@@ -32,6 +32,15 @@ export function AiPromptInterface() {
     e.preventDefault();
     // Placeholder for future submission logic
     console.log("Form submitted (visually)");
+    // Log all form data
+    console.log({
+      prompt: promptText,
+      numberOfPeople: parseInt(numPeople, 10),
+      arrivalDate: arrivalDate ? format(arrivalDate, "yyyy-MM-dd") : "",
+      dailyBudget: budgetOption === "custom" ? customBudget : budgetOption,
+      vehicleAvailability: vehicleAvailable,
+      preferences: preferences,
+    });
   };
 
   return (
@@ -60,8 +69,8 @@ export function AiPromptInterface() {
                     id="ai-prompt"
                     type="text"
                     placeholder="e.g., A relaxing 5-day beach vacation in Bali with some cultural experiences"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
                     className="flex-grow text-base p-3 rounded-lg shadow-sm"
                   />
                   <Button type="submit" size="lg" className="rounded-lg shadow-sm flex items-center gap-2">
