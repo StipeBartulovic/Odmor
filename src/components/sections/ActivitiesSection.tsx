@@ -1,0 +1,102 @@
+"use client";
+
+import type { Activity } from '@/services/activities';
+import { getActivities } from '@/services/activities';
+import { useEffect, useState } from 'react';
+import { ActivityCard } from '@/components/shared/ActivityCard';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Mountain, Waves, Trees, Building, Ticket, Zap, VenetianMask } from 'lucide-react'; // Example icons
+
+// Helper to map activity names/categories to icons
+const getActivityIcon = (activityName: string): React.ElementType => {
+  const lowerName = activityName.toLowerCase();
+  if (lowerName.includes('walk') || lowerName.includes('trail') || lowerName.includes('jogging')) return Trees;
+  if (lowerName.includes('beach')) return Waves;
+  if (lowerName.includes('viewpoint') || lowerName.includes('park')) return Mountain;
+  if (lowerName.includes('museum') || lowerName.includes('national park')) return Building;
+  if (lowerName.includes('rafting') || lowerName.includes('kayaking') || lowerName.includes('quad') || lowerName.includes('zipline')) return Zap;
+  if (lowerName.includes('tour') || lowerName.includes('nightlife') || lowerName.includes('playroom')) return VenetianMask;
+  return Ticket; // Default icon
+};
+
+
+export function ActivitiesSection() {
+  const [activities, setActivities] = useState<Activity[]>([]);
+  
+  useEffect(() => {
+    async function loadActivities() {
+      const fetchedActivities = await getActivities();
+      // For demo: Add more diverse activities
+      const demoActivities: Activity[] = [
+        { name: "Coastal Trail Hike", description: "Enjoy breathtaking views on this scenic coastal hike.", iconUrl: "https://picsum.photos/300/200?random=hike", isFree: true },
+        { name: "City Museum Visit", description: "Explore local history and art at the city museum.", iconUrl: "https://picsum.photos/300/200?random=museum", isFree: false },
+        { name: "Sunset Beach Yoga", description: "Relax and rejuvenate with a yoga session on the beach.", iconUrl: "https://picsum.photos/300/200?random=yoga", isFree: true },
+        { name: "Whitewater Rafting Adventure", description: "Experience the thrill of rafting down the river.", iconUrl: "https://picsum.photos/300/200?random=rafting", isFree: false },
+        { name: "Botanical Gardens Stroll", description: "Discover diverse plant species in a tranquil garden setting.", iconUrl: "https://picsum.photos/300/200?random=garden", isFree: true },
+        { name: "Local Market Tour", description: "Immerse yourself in local culture and cuisine at the bustling market.", iconUrl: "https://picsum.photos/300/200?random=market", isFree: true },
+        { name: "Theme Park Fun", description: "Enjoy a day of rides and entertainment at the nearby theme park.", iconUrl: "https://picsum.photos/300/200?random=themepark", isFree: false },
+        { name: "Kayaking Expedition", description: "Paddle through serene waters and explore hidden coves.", iconUrl: "https://picsum.photos/300/200?random=kayak", isFree: false },
+      ];
+      setActivities([...fetchedActivities, ...demoActivities]);
+    }
+    loadActivities();
+  }, []);
+
+  const freeActivities = activities.filter(activity => activity.isFree);
+  const paidActivities = activities.filter(activity => !activity.isFree);
+
+  return (
+    <section className="py-8 md:py-12 bg-background">
+      <div className="container mx-auto px-4">
+        <Card className="shadow-xl rounded-xl">
+          <CardHeader className="bg-muted/50 p-6">
+            <CardTitle className="text-2xl md:text-3xl font-semibold text-primary">
+              Things to Do
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 md:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h2 className="text-xl font-semibold text-secondary mb-6 flex items-center gap-2">
+                  <Leaf className="h-6 w-6" /> Free Activities
+                </h2>
+                {freeActivities.length > 0 ? (
+                  <div className="space-y-6">
+                    {freeActivities.map((activity, index) => (
+                      <ActivityCard key={`free-${index}`} activity={activity} icon={getActivityIcon(activity.name)} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No free activities listed currently.</p>
+                )}
+              </div>
+
+              <div>
+                <h2 className="text-xl font-semibold text-secondary mb-6 flex items-center gap-2">
+                  <Ticket className="h-6 w-6" /> Paid Activities
+                </h2>
+                {paidActivities.length > 0 ? (
+                  <div className="space-y-6">
+                    {paidActivities.map((activity, index) => (
+                      <ActivityCard key={`paid-${index}`} activity={activity} icon={getActivityIcon(activity.name)} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No paid activities listed currently.</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}
+
+const Leaf = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M11 20A7 7 0 0 1 4 13H2a10 10 0 0 0 10 10z"/>
+    <path d="M12 18c0-5.5 4.5-10 10-10h-2c-4.4 0-8 3.6-8 8v2"/>
+  </svg>
+);
