@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FormEvent } from 'react';
@@ -11,10 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CalendarDays, Users, DollarSign, Car, Sparkles, Search } from "lucide-react";
+import { CalendarDays, Users, DollarSign, Car, Sparkles, Search, Send } from "lucide-react";
 import { format } from "date-fns";
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { ReactNode } from 'react';
+import { useToast } from "@/hooks/use-toast";
+
 
 const translations = {
   planAdventure: {
@@ -50,12 +52,12 @@ const translations = {
     es: 'p.ej., Unas relajantes vacaciones de 5 días en la playa en Bali con algunas experiencias culturales',
   },
   generateButton: {
-    en: 'Generate',
-    it: 'Genera',
-    de: 'Generieren',
-    pl: 'Generuj',
-    fr: 'Générer',
-    es: 'Generar',
+    en: 'Generate Itinerary',
+    it: 'Genera Itinerario',
+    de: 'Reiseplan Erstellen',
+    pl: 'Generuj Plan Podróży',
+    fr: 'Générer l\'Itinéraire',
+    es: 'Generar Itinerario',
   },
   numPeople: {
     en: 'Number of People',
@@ -158,11 +160,28 @@ const translations = {
     fr: 'Notre système d\'IA personnalisé utilisera ces données, combinées à une invite spécifique à l\'emplacement, pour générer automatiquement jusqu\'à trois plans de voyage de plusieurs jours adaptés à votre groupe. Chaque plan comprend des destinations, des temps de trajet, des estimations de coûts, des restaurants à proximité, et plus encore.',
     es: 'Nuestro sistema de IA personalizado utilizará estos datos, combinados con una indicación específica de la ubicación, para generar automáticamente hasta tres planes de viaje de varios días adaptados a su grupo. Cada plan incluye destinos, tiempos de viaje, estimaciones de costos, lugares para comer cercanos y más.',
   },
+  successMessage: {
+    en: 'Itinerary request sent! Please wait for generation.',
+    it: 'Richiesta itinerario inviata! Attendere la generazione.',
+    de: 'Reiseplananfrage gesendet! Bitte warten Sie auf die Erstellung.',
+    pl: 'Wysłano żądanie planu podróży! Proszę czekać na generację.',
+    fr: 'Demande d\'itinéraire envoyée ! Veuillez patienter pendant la génération.',
+    es: '¡Solicitud de itinerario enviada! Por favor, espere la generación.',
+  },
+  errorMessage: {
+    en: 'Failed to send itinerary request. Please try again.',
+    it: 'Invio richiesta itinerario non riuscito. Riprova.',
+    de: 'Senden der Reiseplananfrage fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    pl: 'Nie udało się wysłać żądania planu podróży. Proszę spróbować ponownie.',
+    fr: 'Échec de l\'envoi de la demande d\'itinéraire. Veuillez réessayer.',
+    es: 'Error al enviar la solicitud de itinerario. Inténtalo de nuevo.',
+  },
 };
 
 
 export function AiPromptInterface() {
   const { selectedLanguage } = useLanguage();
+  const { toast } = useToast();
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [numPeople, setNumPeople] = useState<string>("1");
   const [budgetOption, setBudgetOption] = useState<string | undefined>(undefined);
@@ -170,18 +189,11 @@ export function AiPromptInterface() {
   const [vehicleAvailable, setVehicleAvailable] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<string>("");
   const [promptText, setPromptText] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setArrivalDate(new Date());
   }, []);
-
-  const getTranslation = (key: keyof typeof translations, subKey?: string) => {
-    const mainKey = translations[key];
-    if (subKey && typeof mainKey[subKey as keyof typeof mainKey] === 'object') {
-      return mainKey[subKey as keyof typeof mainKey][selectedLanguage] || mainKey[subKey as keyof typeof mainKey]['en'];
-    }
-    return mainKey[selectedLanguage as keyof typeof mainKey] || mainKey['en'];
-  };
   
   const t = (field: keyof typeof translations, subField?: string): string => {
     const dict = translations[field];
@@ -193,18 +205,58 @@ export function AiPromptInterface() {
     return dict[selectedLanguage] || dict['en'];
   };
 
-
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted (visually)");
-    console.log({
+    setIsLoading(true);
+
+    const payload = {
       prompt: promptText,
       numberOfPeople: parseInt(numPeople, 10),
       arrivalDate: arrivalDate ? format(arrivalDate, "yyyy-MM-dd") : "",
       dailyBudget: budgetOption === "custom" ? customBudget : budgetOption,
       vehicleAvailability: vehicleAvailable,
       preferences: preferences,
-    });
+    };
+
+    const webhookUrl = "https://stibar.app.n8n.cloud/webhook-test/42bf9126-47bb-43a1-9661-2d4b764e2725";
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        console.log("Form submitted successfully:", payload);
+        toast({
+          title: "Success!",
+          description: t('successMessage'),
+          variant: "default",
+        });
+        // Optionally clear the form or navigate user
+        // setPromptText("");
+        // ... reset other fields if needed
+      } else {
+        console.error("Failed to submit form:", response.status, await response.text());
+        toast({
+          title: "Error",
+          description: t('errorMessage'),
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: t('errorMessage'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -235,9 +287,18 @@ export function AiPromptInterface() {
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
                     className="flex-grow text-base p-3 rounded-lg shadow-sm"
+                    disabled={isLoading}
                   />
-                  <Button type="submit" size="lg" className="rounded-lg shadow-sm flex items-center gap-2">
-                    <Sparkles className="h-5 w-5" /> {t('generateButton')}
+                  <Button type="submit" size="lg" className="rounded-lg shadow-sm flex items-center gap-2" disabled={isLoading}>
+                    {isLoading ? (
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                    {t('generateButton')}
                   </Button>
                 </div>
               </div>
@@ -252,6 +313,7 @@ export function AiPromptInterface() {
                     value={numPeople}
                     onChange={(e) => setNumPeople(e.target.value)}
                     className="rounded-md shadow-sm"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -263,6 +325,7 @@ export function AiPromptInterface() {
                         variant={"outline"}
                         className="w-full justify-start text-left font-normal rounded-md shadow-sm"
                         id="arrival-date"
+                        disabled={isLoading}
                       >
                         <CalendarDays className="mr-2 h-4 w-4" />
                         {arrivalDate ? format(arrivalDate, "PPP") : <span>{t('pickADate')}</span>}
@@ -274,6 +337,7 @@ export function AiPromptInterface() {
                         selected={arrivalDate}
                         onSelect={setArrivalDate}
                         initialFocus
+                        disabled={isLoading}
                       />
                     </PopoverContent>
                   </Popover>
@@ -282,15 +346,15 @@ export function AiPromptInterface() {
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="daily-budget" className="flex items-center gap-2"><DollarSign className="h-5 w-5 text-primary" />{t('dailyBudget')}</Label>
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Select value={budgetOption} onValueChange={setBudgetOption}>
+                    <Select value={budgetOption} onValueChange={setBudgetOption} disabled={isLoading}>
                       <SelectTrigger className="rounded-md shadow-sm flex-grow">
                         <SelectValue placeholder={t('selectBudgetRange')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="&lt;50">{t('under50')}</SelectItem>
+                        <SelectItem value="<50">{t('under50')}</SelectItem>
                         <SelectItem value="50-100">{t('50-100')}</SelectItem>
                         <SelectItem value="100-200">{t('100-200')}</SelectItem>
-                        <SelectItem value="&gt;200">{t('over200')}</SelectItem>
+                        <SelectItem value=">200">{t('over200')}</SelectItem>
                         <SelectItem value="custom">{t('customAmount')}</SelectItem>
                       </SelectContent>
                     </Select>
@@ -301,6 +365,7 @@ export function AiPromptInterface() {
                         value={customBudget}
                         onChange={(e) => setCustomBudget(e.target.value)}
                         className="rounded-md shadow-sm flex-grow"
+                        disabled={isLoading}
                       />
                     )}
                   </div>
@@ -313,6 +378,7 @@ export function AiPromptInterface() {
                       id="vehicle-availability"
                       checked={vehicleAvailable}
                       onCheckedChange={setVehicleAvailable}
+                      disabled={isLoading}
                     />
                     <Label htmlFor="vehicle-availability" className="text-sm">
                       {vehicleAvailable ? t('vehicleYes') : t('vehicleNo')}
@@ -328,6 +394,7 @@ export function AiPromptInterface() {
                     value={preferences}
                     onChange={(e) => setPreferences(e.target.value)}
                     className="min-h-[100px] rounded-md shadow-sm"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -344,3 +411,5 @@ export function AiPromptInterface() {
     </section>
   );
 }
+
+    
