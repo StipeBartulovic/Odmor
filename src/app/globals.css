@@ -55,49 +55,49 @@ body {
   }
 
   .dark {
-    --background: 235 17% 20%; /* Darker C1 - #35374B */
-    --foreground: 210 20% 88%;   /* Light gray */
+    --background: 235 17% 20%; 
+    --foreground: 210 30% 90%; 
 
-    --card: 204 24% 23%; /* Darker C2 - #344955 */
-    --card-foreground: 210 20% 88%; /* Light gray */
+    --card: 204 24% 25%; 
+    --card-foreground: 210 30% 90%;
 
-    --popover: 204 24% 23%; /* Darker C2 */
-    --popover-foreground: 210 20% 88%; /* Light gray */
+    --popover: 204 24% 25%;
+    --popover-foreground: 210 30% 90%;
 
-    --primary: 137 16% 60%; /* Lighter C4 - #78A083 for dark primary */
-    --primary-foreground: 235 17% 15%; /* Very dark text */
+    --primary: 137 16% 65%; 
+    --primary-foreground: 235 17% 10%; 
 
-    --secondary: 194 21% 50%; /* Lighter C3 - #50727B for dark secondary */
-    --secondary-foreground: 235 17% 15%; /* Very dark text */
+    --secondary: 194 21% 55%; 
+    --secondary-foreground: 235 17% 10%;
 
-    --muted: 204 24% 27%; /* C2 - #344955 */
-    --muted-foreground: 210 20% 70%; /* Mid-light gray */
+    --muted: 204 24% 22%; 
+    --muted-foreground: 210 25% 70%;
 
-    --accent: 137 16% 55%; /* C4 - #78A083 */
-    --accent-foreground: 235 17% 15%; /* Very dark text */
+    --accent: 137 16% 55%;
+    --accent-foreground: 210 30% 98%; 
 
-    --destructive: 0 72.2% 50.6%; /* Adjusted for dark mode */
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 194 20% 35%; /* Darker border */
-    --input: 204 20% 30%;  /* Darker input background */
-    --ring: 137 16% 60%; /* Dark Primary for Ring */
+    --border: 204 20% 30%;
+    --input: 204 20% 32%;
+    --ring: 137 16% 65%;
     
-    --chart-1: 137 16% 60%; /* Dark Primary (Lighter C4) */
-    --chart-2: 194 21% 50%; /* Dark Secondary (Lighter C3) */
-    --chart-3: 137 16% 55%; /* Dark Accent (C4) */
-    --chart-4: 204 24% 40%; /* Lighter C2 */
-    --chart-5: 235 17% 35%; /* Lighter C1 */
+    --chart-1: 137 16% 65%;
+    --chart-2: 194 21% 55%;
+    --chart-3: 137 16% 55%;
+    --chart-4: 204 24% 45%;
+    --chart-5: 235 17% 40%;
 
     /* Dark Sidebar colors */
-    --sidebar-background: 235 17% 18%; /* Very dark */
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 137 16% 60%; /* Dark Primary */
-    --sidebar-primary-foreground: 235 17% 15%;
-    --sidebar-accent: 204 24% 27%; /* C2 for active items bg */
-    --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 194 20% 30%;
-    --sidebar-ring: 137 16% 60%; /* Dark Primary */
+    --sidebar-background: 235 17% 18%;
+    --sidebar-foreground: 210 30% 88%;
+    --sidebar-primary: 137 16% 65%;
+    --sidebar-primary-foreground: 235 17% 10%;
+    --sidebar-accent: 204 24% 27%; 
+    --sidebar-accent-foreground: 210 30% 95%;
+    --sidebar-border: 204 20% 28%;
+    --sidebar-ring: 137 16% 65%;
   }
 }
 
