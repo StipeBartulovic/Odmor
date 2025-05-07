@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
+// import { GeistMono } from 'geist/font/mono'; // geist/font/mono is not installed
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = GeistSans;
-const geistMono = GeistMono;
+// const geistMono = GeistMono; // geist/font/mono is not installed
 
 export const metadata: Metadata = {
   title: 'WanderAI - Your Personal Travel Assistant',
@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${geistSans.variable} font-sans antialiased`}>
         {children}
         <Toaster />
       </body>
