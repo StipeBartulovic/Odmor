@@ -5,12 +5,11 @@ import { AiPromptInterface } from '@/components/sections/AiPromptInterface';
 import { InteractiveMap } from '@/components/sections/InteractiveMap';
 import { ActivitiesSection } from '@/components/sections/ActivitiesSection';
 import { EventsSection } from '@/components/sections/EventsSection';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
+import { HologramButton } from '@/components/shared/HologramButton';
 
 const pageTranslations = {
   tipsButton: {
@@ -76,12 +75,12 @@ export default function HomePage() {
         <EventsSection />
 
         <section className="py-8 md:py-12 text-center">
-          <Link href="/tips" passHref>
-            <Button size="lg" className="rounded-xl shadow-lg px-8 py-6 text-lg" variant="outline">
-              <Lightbulb className="mr-3 h-6 w-6 text-accent" />
-              {t('tipsButton')}
-            </Button>
-          </Link>
+          <HologramButton
+            href="/tips"
+            text={t('tipsButton')}
+            icon={<Lightbulb />}
+            ariaLabel={t('tipsButton')}
+          />
         </section>
       </main>
       <footer className="py-8 bg-muted text-center">
