@@ -8,96 +8,96 @@ body {
 
 @layer base {
   :root {
-    --background: 40 100% 85%; /* Pale Yellow/Beige from #FFE8B6 */
-    --foreground: 98 26% 20%; /* Dark Green from #5B913B (darkened) */
+    --background: 210 30% 98%; /* Off-white, slightly cool */
+    --foreground: 235 17% 25%; /* C1 - #35374B */
 
-    --card: 40 100% 88%; /* Slightly Lighter Pale Yellow/Beige */
-    --card-foreground: 98 26% 20%; /* Dark Green */
+    --card: 210 30% 100%; /* White */
+    --card-foreground: 235 17% 25%; /* C1 */
 
-    --popover: 40 100% 88%; /* Slightly Lighter Pale Yellow/Beige */
-    --popover-foreground: 98 26% 20%; /* Dark Green */
+    --popover: 210 30% 100%; /* White */
+    --popover-foreground: 235 17% 25%; /* C1 */
 
-    --primary: 98 26% 46%; /* Green from #5B913B */
-    --primary-foreground: 40 100% 95%; /* Very Light Pale Yellow/Beige */
+    --primary: 194 21% 40%; /* C3 - #50727B */
+    --primary-foreground: 210 30% 98%; /* Light text for primary */
 
-    --secondary: 98 38% 52%; /* Lighter Green from #77B254 */
-    --secondary-foreground: 98 26% 20%; /* Dark Green */
+    --secondary: 204 24% 27%; /* C2 - #344955 */
+    --secondary-foreground: 210 30% 98%; /* Light text for secondary */
 
-    --muted: 40 80% 82%; /* Muted Pale Yellow/Beige */
-    --muted-foreground: 98 26% 35%; /* Mid Green */
+    --muted: 210 25% 94%; /* Lighter gray */
+    --muted-foreground: 204 20% 50%; /* Mid-tone of C2 */
 
-    --accent: 21 55% 68%; /* Terracotta from #D99D81 */
-    --accent-foreground: 40 100% 95%; /* Very Light Pale Yellow/Beige */
+    --accent: 137 16% 55%; /* C4 - #78A083 */
+    --accent-foreground: 235 17% 20%; /* Darker C1 for text on accent */
 
     --destructive: 0 84.2% 60.2%; /* Default red */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 98 30% 70%; /* Light Green Border */
-    --input: 98 30% 75%;  /* Lighter Green Input Background */
-    --ring: 98 26% 46%; /* Green Ring */
+    --border: 204 20% 85%; /* Lighter shade derived from C2/C3 base */
+    --input: 204 20% 90%;  /* Lighter input background */
+    --ring: 194 21% 40%; /* C3 - #50727B for Ring */
     
-    --chart-1: 98 26% 46%; /* Primary */
-    --chart-2: 98 38% 52%; /* Secondary */
-    --chart-3: 21 55% 68%; /* Accent */
-    --chart-4: 98 26% 36%; /* Darker Primary */
-    --chart-5: 98 38% 42%; /* Darker Secondary */
+    --chart-1: 194 21% 40%; /* C3 */
+    --chart-2: 137 16% 55%; /* C4 */
+    --chart-3: 204 24% 27%; /* C2 */
+    --chart-4: 235 17% 25%; /* C1 */
+    --chart-5: 194 21% 30%; /* Darker C3 */
     --radius: 0.5rem;
 
     /* Sidebar colors */
-    --sidebar-background: 40 100% 87%; /* Similar to main bg */
-    --sidebar-foreground: 98 26% 25%; /* Dark green text */
-    --sidebar-primary: 98 26% 46%; /* Main Primary */
-    --sidebar-primary-foreground: 40 100% 95%; /* Main Primary Foreground */
-    --sidebar-accent: 40 90% 80%; /* Lighter background for active items */
-    --sidebar-accent-foreground: 98 26% 20%; /* Dark green text on sidebar accent */
-    --sidebar-border: 98 30% 65%; /* Slightly darker border */
-    --sidebar-ring: 98 26% 46%; /* Main Ring */
+    --sidebar-background: 210 25% 94%; /* Light Muted */
+    --sidebar-foreground: 235 17% 25%; /* C1 */
+    --sidebar-primary: 194 21% 40%; /* C3 */
+    --sidebar-primary-foreground: 210 30% 98%;
+    --sidebar-accent: 137 16% 80%; /* Lighter Accent C4 for active items */
+    --sidebar-accent-foreground: 235 17% 25%; /* C1 */
+    --sidebar-border: 204 20% 80%;
+    --sidebar-ring: 194 21% 40%; /* C3 */
   }
 
   .dark {
-    --background: 98 26% 15%; /* Dark Green from #5B913B (darkened) */
-    --foreground: 40 100% 88%;   /* Light Pale Yellow/Beige from #FFE8B6 */
+    --background: 235 17% 20%; /* Darker C1 - #35374B */
+    --foreground: 210 20% 88%;   /* Light gray */
 
-    --card: 98 26% 20%; /* Slightly Lighter Dark Green */
-    --card-foreground: 40 100% 88%; /* Light Pale Yellow/Beige */
+    --card: 204 24% 23%; /* Darker C2 - #344955 */
+    --card-foreground: 210 20% 88%; /* Light gray */
 
-    --popover: 98 26% 20%; /* Slightly Lighter Dark Green */
-    --popover-foreground: 40 100% 88%; /* Light Pale Yellow/Beige */
+    --popover: 204 24% 23%; /* Darker C2 */
+    --popover-foreground: 210 20% 88%; /* Light gray */
 
-    --primary: 98 38% 60%; /* Lighter Green from #77B254 (brightened for dark mode) */
-    --primary-foreground: 98 26% 10%; /* Very Dark Green */
+    --primary: 137 16% 60%; /* Lighter C4 - #78A083 for dark primary */
+    --primary-foreground: 235 17% 15%; /* Very dark text */
 
-    --secondary: 21 55% 75%; /* Lighter Terracotta from #D99D81 (brightened) */
-    --secondary-foreground: 98 26% 15%; /* Dark Green (same as background) */
+    --secondary: 194 21% 50%; /* Lighter C3 - #50727B for dark secondary */
+    --secondary-foreground: 235 17% 15%; /* Very dark text */
 
-    --muted: 98 26% 25%; /* Mid-Dark Green */
-    --muted-foreground: 40 80% 75%; /* Muted Light Pale Yellow/Beige */
+    --muted: 204 24% 27%; /* C2 - #344955 */
+    --muted-foreground: 210 20% 70%; /* Mid-light gray */
 
-    --accent: 40 100% 80%; /* Slightly Toned Down #FFE8B6 */
-    --accent-foreground: 98 26% 10%; /* Very Dark Green */
+    --accent: 137 16% 55%; /* C4 - #78A083 */
+    --accent-foreground: 235 17% 15%; /* Very dark text */
 
     --destructive: 0 72.2% 50.6%; /* Adjusted for dark mode */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 98 20% 35%; /* Darker, less saturated Green Border */
-    --input: 98 20% 30%;  /* Slightly Darker Input Background */
-    --ring: 98 38% 60%; /* Lighter Green Ring */
+    --border: 194 20% 35%; /* Darker border */
+    --input: 204 20% 30%;  /* Darker input background */
+    --ring: 137 16% 60%; /* Dark Primary for Ring */
     
-    --chart-1: 98 38% 60%; /* Dark Primary */
-    --chart-2: 21 55% 75%; /* Dark Secondary */
-    --chart-3: 40 100% 80%; /* Dark Accent */
-    --chart-4: 98 38% 50%; /* Darker Dark Primary */
-    --chart-5: 21 55% 65%; /* Darker Dark Secondary */
+    --chart-1: 137 16% 60%; /* Dark Primary (Lighter C4) */
+    --chart-2: 194 21% 50%; /* Dark Secondary (Lighter C3) */
+    --chart-3: 137 16% 55%; /* Dark Accent (C4) */
+    --chart-4: 204 24% 40%; /* Lighter C2 */
+    --chart-5: 235 17% 35%; /* Lighter C1 */
 
     /* Dark Sidebar colors */
-    --sidebar-background: 98 26% 12%; /* Very dark green */
-    --sidebar-foreground: 40 100% 85%; /* Light beige text */
-    --sidebar-primary: 98 38% 60%; /* Dark Primary */
-    --sidebar-primary-foreground: 98 26% 10%; /* Dark Primary Foreground */
-    --sidebar-accent: 98 26% 22%; /* Darker green for active items */
-    --sidebar-accent-foreground: 40 100% 90%; /* Light beige text on sidebar accent */
-    --sidebar-border: 98 20% 30%; /* Darker border */
-    --sidebar-ring: 98 38% 60%; /* Dark Ring */
+    --sidebar-background: 235 17% 18%; /* Very dark */
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 137 16% 60%; /* Dark Primary */
+    --sidebar-primary-foreground: 235 17% 15%;
+    --sidebar-accent: 204 24% 27%; /* C2 for active items bg */
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 194 20% 30%;
+    --sidebar-ring: 137 16% 60%; /* Dark Primary */
   }
 }
 
