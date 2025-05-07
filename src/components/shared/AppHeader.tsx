@@ -1,4 +1,3 @@
-
 'use client';
 
 import { PlaneTakeoff } from 'lucide-react';
@@ -7,20 +6,19 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 
-// Placeholder for translations - in a real app, this would come from an i18n library
-const appTitles: Record<string, string> = {
+const appTitleTranslations: Record<string, string> = {
   en: 'Stibar',
-  it: 'Stibar (It)',
-  de: 'Stibar (De)',
-  pl: 'Stibar (Pl)',
-  fr: 'Stibar (Fr)',
-  es: 'Stibar (Es)',
+  it: 'Stibar', 
+  de: 'Stibar',
+  pl: 'Stibar',
+  fr: 'Stibar',
+  es: 'Stibar',
 };
 
 export function AppHeader() {
   const { selectedLanguage } = useLanguage();
   
-  const currentTitle: ReactNode = appTitles[selectedLanguage] || appTitles.en;
+  const currentTitle: ReactNode = appTitleTranslations[selectedLanguage] || appTitleTranslations.en;
 
   return (
     <header className="py-8 bg-background shadow-sm">

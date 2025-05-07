@@ -1,7 +1,24 @@
+'use client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import type { ReactNode } from 'react';
+
+const translations = {
+  mapTitle: {
+    en: 'Trip Highlights Map',
+    it: 'Mappa dei Momenti Salienti del Viaggio',
+    de: 'Karte der Reisehöhepunkte',
+    pl: 'Mapa Najciekawszych Punktów Podróży',
+    fr: 'Carte des Points Forts du Voyage',
+    es: 'Mapa de los Puntos Destacados del Viaje',
+  }
+};
 
 export function InteractiveMap() {
+  const { selectedLanguage } = useLanguage();
+  const localizedMapTitle: ReactNode = translations.mapTitle[selectedLanguage] || translations.mapTitle.en;
+
   return (
     <section className="py-8 md:py-12 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -9,7 +26,7 @@ export function InteractiveMap() {
           <CardHeader className="bg-background p-6">
             <CardTitle className="text-2xl md:text-3xl font-semibold text-primary flex items-center gap-2">
               <MapPin className="h-8 w-8" />
-              Trip Highlights Map
+              {localizedMapTitle}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 md:p-2">
@@ -22,7 +39,7 @@ export function InteractiveMap() {
                 allowFullScreen={false}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title="Trip Highlights Map"
+                title={typeof localizedMapTitle === 'string' ? localizedMapTitle : 'Trip Highlights Map'} // iframe title must be string
                 className="w-full h-full"
               ></iframe>
             </div>
