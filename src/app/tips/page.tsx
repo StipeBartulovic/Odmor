@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -8,9 +9,11 @@ import { tipsData, type TipCategory, type Tip } from '@/data/tips';
 import { 
   Globe, Lightbulb, Wrench, CarFront, PlugZap, Utensils, Umbrella, Info, ExternalLink,
   ShieldAlert, Droplets, Landmark, Activity as ActivityIcon, Clock, Smartphone, Phone, TrafficCone, Ship, Bike, Squirrel,
-  Power, BatteryCharging, Plug, Coins, Receipt, CigaretteOff, MessageSquare, Languages, Sun, Footprints, Ticket
+  Power, BatteryCharging, Plug, Coins, Receipt, CigaretteOff, MessageSquare, Languages, Sun, Footprints, Ticket, ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 // Helper function to get Lucide icon component based on string name
 const getIcon = (iconName?: string): React.ElementType => {
@@ -51,10 +54,19 @@ const getIcon = (iconName?: string): React.ElementType => {
 };
 
 export default function TipsPage() {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
+        <div className="mb-8">
+          <Button variant="outline" onClick={() => router.back()} className="rounded-lg shadow-sm">
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Go Back
+          </Button>
+        </div>
+
         <header className="text-center space-y-4 mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-primary flex items-center justify-center gap-3">
             <Globe className="h-10 w-10" />
@@ -139,3 +151,4 @@ export default function TipsPage() {
     </div>
   );
 }
+
