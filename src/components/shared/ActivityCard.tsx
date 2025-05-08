@@ -1,11 +1,11 @@
 "use client";
 
-import type { Activity } from '@/services/activities';
+import type { Activity, SubActivity } from '@/services/activities';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card"; // CardContent removed as it's not directly used, AccordionContent provides similar structure
 import { Badge } from "@/components/ui/badge";
 import Image from 'next/image';
-import { DollarSign, Leaf, Palette, Info } from 'lucide-react';
+import { DollarSign, Leaf, Palette, Info, MapPin } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
@@ -39,6 +39,14 @@ const translations = {
     pl: 'Dalsze szczegóły i opcje dostawców dostępne.',
     fr: 'Plus de détails et options de fournisseurs disponibles.',
     es: 'Más detalles y opciones de proveedores disponibles.',
+  },
+  specificLocationsTitle: {
+    en: 'Specific locations/options near Split:',
+    it: 'Luoghi/opzioni specifici vicino a Spalato:',
+    de: 'Spezifische Standorte/Optionen in der Nähe von Split:',
+    pl: 'Konkretne lokalizacje/opcje w pobliżu Splitu:',
+    fr: 'Lieux/options spécifiques près de Split :',
+    es: 'Ubicaciones/opciones específicas cerca de Split:',
   }
 };
 
@@ -56,12 +64,7 @@ export function ActivityCard({ activity, icon: IconComponent = Palette }: Activi
     return translations[fieldKey][langToUse] || translations[fieldKey]['en'];
   };
 
-  // For activity name and description, we rely on them being passed correctly (potentially already translated if needed)
-  // Or, if they were structured like { en: "Name", it: "Nome" }, we'd use getLocalizedText(activity.name)
-  // For now, we display them as they are from the `activity` prop.
-
   if (!isMounted) {
-    // Basic skeleton for the card to avoid layout shifts and hydration errors
     return (
       <Card className="shadow-lg rounded-xl">
         <div className="p-4">
@@ -108,7 +111,31 @@ export function ActivityCard({ activity, icon: IconComponent = Palette }: Activi
                   />
               )}
               <p className="text-sm text-muted-foreground leading-relaxed">{activity.description}</p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
+              
+              {activity.isFree && activity.subActivities && activity.subActivities.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-muted/30">
+                  <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    {t('specificLocationsTitle')}
+                  </h4>
+                  <ul className="space-y-1.5 pl-1">
+                    {activity.subActivities.map((sub, index) => (
+                      <li key={index}>
+                        <a
+                          href={sub.googleMapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-primary hover:underline text-sm"
+                        >
+                          {sub.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground italic pt-2">
                 <Info className="h-4 w-4" />
                 <span>{t('detailsPlaceholder')}</span>
               </div>
