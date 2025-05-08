@@ -10,6 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
 import { HologramButton } from '@/components/shared/HologramButton';
+import { PasswordOverlay } from '@/components/shared/PasswordOverlay';
 
 const pageTranslations = {
   tipsButton: {
@@ -43,11 +44,20 @@ export default function HomePage() {
   const { selectedLanguage } = useLanguage(); 
   const [isMounted, setIsMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
   }, []);
+  
+  const handleAuthentication = (password: string): boolean => {
+    if (password === '1234') {
+      setIsAuthenticated(true);
+      return true;
+    }
+    return false;
+  };
   
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
@@ -63,6 +73,10 @@ export default function HomePage() {
         <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <PasswordOverlay onAuthenticate={handleAuthentication} />;
   }
 
   return (
