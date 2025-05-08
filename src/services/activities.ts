@@ -71,22 +71,23 @@ export async function getActivities(): Promise<Activity[]> {
       // No subActivities for paid activities in this example
     },
     { 
-      name: "Coastal Trail Hike", 
-      description: "Enjoy breathtaking views on this scenic coastal hike.", 
-      iconUrl: "https://picsum.photos/300/200?random=hike", 
+      name: "Old Town Walk", 
+      description: "Explore the historic streets and landmarks of Split's Old Town.", 
+      iconUrl: "https://picsum.photos/300/200?random=oldtown", 
       isFree: true, 
-      dataAiHint: "coastal hike",
+      dataAiHint: "old town",
       subActivities: [
-        { name: "Bačvice Beach Coastal Path", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Bačvice+Beach+Split+Croatia+coastal+path" },
-        { name: "Kašjuni Beach Trail", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Kašjuni+Beach+Split+Croatia+trail" }
+        { name: "Diocletian's Palace Self-Guided Tour", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Diocletian's+Palace+Split+Croatia" },
+        { name: "Stroll along Riva Promenade", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Riva+Promenade+Split+Croatia" },
+        { name: "Visit Pjaca (People's Square)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Pjaca+Split+Croatia" }
       ]
     },
     { 
-      name: "Rafting Adventures", 
-      description: "Experience thrilling white-water rafting on the Cetina river, near Split.", 
-      iconUrl: "https://picsum.photos/300/200?random=rafting", 
+      name: "Zipline Adventure", 
+      description: "Soar through the treetops on an exhilarating zipline course near Split.", 
+      iconUrl: "https://picsum.photos/300/200?random=zipline", 
       isFree: false, 
-      dataAiHint: "rafting river" 
+      dataAiHint: "zipline forest" 
     },
   ];
 }

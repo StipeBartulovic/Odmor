@@ -97,7 +97,7 @@ export function ActivitiesSection() {
             { name: "Visit Pjaca (People's Square)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Pjaca+Split+Croatia" }
           ]
         },
-        { name: "Rafting Adventures", description: "Experience thrilling white-water rafting on the nearby river.", iconUrl: "https://picsum.photos/300/200?random=rafting", isFree: false, dataAiHint: "rafting river" },
+        { name: "Zipline Adventure", description: "Soar through the treetops on an exhilarating zipline course.", iconUrl: "https://picsum.photos/300/200?random=zipline", isFree: false, dataAiHint: "zipline forest" },
       ];
       setActivities([...fetchedActivities, ...demoActivities]);
     }
