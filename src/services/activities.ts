@@ -88,16 +88,5 @@ export async function getActivities(): Promise<Activity[]> {
       isFree: false, 
       dataAiHint: "rafting river" 
     },
-    { 
-      name: "Sunset Beach Yoga", 
-      description: "Relax and rejuvenate with a yoga session on the beach as the sun sets.", 
-      iconUrl: "https://picsum.photos/300/200?random=yoga", 
-      isFree: true, 
-      dataAiHint: "beach yoga",
-      subActivities: [
-        { name: "Yoga Spot at Bene Beach", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Bene+Beach+Split+Croatia" },
-        { name: "Peaceful Yoga at Trstenik Beach", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Trstenik+Beach+Split+Croatia" }
-      ]
-    },
   ];
 }

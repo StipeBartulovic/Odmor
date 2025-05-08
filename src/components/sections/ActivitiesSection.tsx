@@ -84,9 +84,13 @@ export function ActivitiesSection() {
       const fetchedActivities = await getActivities();
       // For demo: Add more diverse activities. These names/descriptions would also need translation.
       const demoActivities: Activity[] = [
-        { name: "Coastal Trail Hike", description: "Enjoy breathtaking views on this scenic coastal hike.", iconUrl: "https://picsum.photos/300/200?random=hike", isFree: true, dataAiHint: "coastal hike" },
+        { name: "Coastal Trail Hike", description: "Enjoy breathtaking views on this scenic coastal hike.", iconUrl: "https://picsum.photos/300/200?random=hike", isFree: true, dataAiHint: "coastal hike", 
+          subActivities: [
+            { name: "Bačvice Beach Coastal Path", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Bačvice+Beach+Split+Croatia+coastal+path" },
+            { name: "Kašjuni Beach Trail", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Kašjuni+Beach+Split+Croatia+trail" }
+          ]
+        },
         { name: "Rafting Adventures", description: "Experience thrilling white-water rafting on the nearby river.", iconUrl: "https://picsum.photos/300/200?random=rafting", isFree: false, dataAiHint: "rafting river" },
-        { name: "Sunset Beach Yoga", description: "Relax and rejuvenate with a yoga session on the beach.", iconUrl: "https://picsum.photos/300/200?random=yoga", isFree: true, dataAiHint: "beach yoga" },
       ];
       setActivities([...fetchedActivities, ...demoActivities]);
     }
