@@ -84,22 +84,32 @@ export function ActivitiesSection() {
     async function loadActivities() {
       const fetchedActivities = await getActivities();
       // For demo: Add more diverse activities. These names/descriptions would also need translation.
+      // Ensure demoActivities do not duplicate what might be fetched from getActivities to avoid repetition.
       const demoActivities: Activity[] = [
         { 
-          name: "Old Town Walk", 
-          description: "Explore the historic streets and landmarks of Split's Old Town.", 
-          iconUrl: "https://picsum.photos/300/200?random=oldtown", 
+          name: "Old Town Exploration", // Changed from "Old Town Walk" to avoid confusion if getActivities provides a similar one
+          description: "Discover the historic alleys and significant landmarks of Split's ancient core.", 
+          iconUrl: "https://picsum.photos/300/200?random=oldcity", 
           isFree: true, 
-          dataAiHint: "old town", 
+          dataAiHint: "old city", 
           subActivities: [
             { name: "Diocletian's Palace Self-Guided Tour", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Diocletian's+Palace+Split+Croatia" },
             { name: "Stroll along Riva Promenade", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Riva+Promenade+Split+Croatia" },
             { name: "Visit Pjaca (People's Square)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Pjaca+Split+Croatia" }
           ]
         },
-        { name: "Zipline Adventure", description: "Soar through the treetops on an exhilarating zipline course.", iconUrl: "https://picsum.photos/300/200?random=zipline", isFree: false, dataAiHint: "zipline forest" },
+        { 
+          name: "Zipline Adventure Over Canyon", // Changed for uniqueness
+          description: "Experience an adrenaline rush soaring over a canyon on a zipline.", 
+          iconUrl: "https://picsum.photos/300/200?random=ziplinecanyon", 
+          isFree: false, 
+          dataAiHint: "zipline canyon" 
+        },
       ];
-      setActivities([...fetchedActivities, ...demoActivities]);
+      // Combine and remove duplicates by name, preferring fetchedActivities
+      const combinedActivities = [...fetchedActivities, ...demoActivities];
+      const uniqueActivities = Array.from(new Map(combinedActivities.map(activity => [activity.name, activity])).values());
+      setActivities(uniqueActivities);
     }
     loadActivities();
   }, []);
@@ -152,7 +162,7 @@ export function ActivitiesSection() {
                 {freeActivities.length > 0 ? (
                   <div className="space-y-6">
                     {freeActivities.map((activity, index) => (
-                      <ActivityCard key={`free-${index}`} activity={activity} icon={getActivityIcon(activity.name)} />
+                      <ActivityCard key={`free-${activity.name}-${index}`} activity={activity} icon={getActivityIcon(activity.name)} />
                     ))}
                   </div>
                 ) : (
@@ -167,7 +177,7 @@ export function ActivitiesSection() {
                 {paidActivities.length > 0 ? (
                   <div className="space-y-6">
                     {paidActivities.map((activity, index) => (
-                      <ActivityCard key={`paid-${index}`} activity={activity} icon={getActivityIcon(activity.name)} />
+                      <ActivityCard key={`paid-${activity.name}-${index}`} activity={activity} icon={getActivityIcon(activity.name)} />
                     ))}
                   </div>
                 ) : (

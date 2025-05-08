@@ -68,10 +68,15 @@ export async function getActivities(): Promise<Activity[]> {
       iconUrl: 'https://picsum.photos/300/200?random=museumvisit',
       isFree: false,
       dataAiHint: 'museum art'
-      // No subActivities for paid activities in this example
+    },
+    {
+      name: "Rafting Adventure on Cetina River",
+      description: "Experience thrilling white-water rafting on the scenic Cetina river, suitable for most skill levels.",
+      iconUrl: "https://picsum.photos/300/200?random=rafting",
+      isFree: false,
+      dataAiHint: "rafting river"
     }
     // "Old Town Walk" and "Zipline Adventure" are provided by demoActivities in ActivitiesSection.tsx
     // to avoid duplicates and ensure correct, distinct content.
   ];
 }
-
