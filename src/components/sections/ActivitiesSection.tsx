@@ -85,7 +85,7 @@ export function ActivitiesSection() {
       // For demo: Add more diverse activities. These names/descriptions would also need translation.
       const demoActivities: Activity[] = [
         { name: "Coastal Trail Hike", description: "Enjoy breathtaking views on this scenic coastal hike.", iconUrl: "https://picsum.photos/300/200?random=hike", isFree: true, dataAiHint: "coastal hike" },
-        { name: "City Museum Visit", description: "Explore local history and art at the city museum.", iconUrl: "https://picsum.photos/300/200?random=museum", isFree: false, dataAiHint: "city museum" },
+        { name: "Rafting Adventures", description: "Experience thrilling white-water rafting on the nearby river.", iconUrl: "https://picsum.photos/300/200?random=rafting", isFree: false, dataAiHint: "rafting river" },
         { name: "Sunset Beach Yoga", description: "Relax and rejuvenate with a yoga session on the beach.", iconUrl: "https://picsum.photos/300/200?random=yoga", isFree: true, dataAiHint: "beach yoga" },
       ];
       setActivities([...fetchedActivities, ...demoActivities]);
@@ -178,3 +178,4 @@ const Leaf = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M12 18c0-5.5 4.5-10 10-10h-2c-4.4 0-8 3.6-8 8v2"/>
   </svg>
 );
+
