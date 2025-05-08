@@ -52,14 +52,27 @@ export async function getActivities(): Promise<Activity[]> {
 
   return [
     {
-      name: 'Example Nature Walk',
-      description: 'A walk in nature, like exploring Marjan Park or taking a stroll along Žnjan promenade.',
-      iconUrl: 'https://picsum.photos/300/200?random=naturewalk',
+      name: 'Coastal Beach Walk',
+      description: "Enjoy scenic walks along Split's beautiful beaches and coastline.",
+      iconUrl: 'https://picsum.photos/300/200?random=beachwalk',
       isFree: true,
-      dataAiHint: 'nature walk',
+      dataAiHint: 'beach coastline',
       subActivities: [
-        { name: "Marjan Park Forest Trail", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Marjan+Park+Split+Croatia+trails" },
-        { name: "Žnjan Promenade Walk", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Žnjan+promenade+Split+Croatia" }
+        { name: "Žnjan Beach Promenade", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Žnjan+beach+promenade+Split+Croatia" },
+        { name: "Bačvice to Firule Coastal Path", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Bačvice+to+Firule+coastal+path+Split+Croatia" },
+        { name: "Kašjuni Beach Walk", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Kašjuni+Beach+Split+Croatia" }
+      ]
+    },
+    {
+      name: 'Marjan Park Hiking Trails',
+      description: "Explore diverse hiking trails in Marjan Forest Park with stunning city and sea views.",
+      iconUrl: 'https://picsum.photos/300/200?random=marjanhike',
+      isFree: true,
+      dataAiHint: 'forest park',
+      subActivities: [
+        { name: "Marjan Hill Summit (Telegrin Peak)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Telegrin+peak+Marjan+Split+Croatia" },
+        { name: "St. Nicholas Church Viewpoint Trail", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=St.+Nicholas+Church+Marjan+Split+Croatia" },
+        { name: "Bene Beach Trail (via Marjan Park)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Bene+Beach+Marjan+Park+Split+Croatia" }
       ]
     },
     {
@@ -76,7 +89,5 @@ export async function getActivities(): Promise<Activity[]> {
       isFree: false,
       dataAiHint: "rafting river"
     }
-    // "Old Town Walk" and "Zipline Adventure" are provided by demoActivities in ActivitiesSection.tsx
-    // to avoid duplicates and ensure correct, distinct content.
   ];
 }

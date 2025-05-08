@@ -63,10 +63,14 @@ const translations = {
 
 const getActivityIcon = (activityName: string): React.ElementType => {
   const lowerName = activityName.toLowerCase();
-  if (lowerName.includes('walk') || lowerName.includes('trail') || lowerName.includes('jogging')) return Trees;
-  if (lowerName.includes('beach')) return Waves;
-  if (lowerName.includes('viewpoint') || lowerName.includes('park')) return Mountain;
-  if (lowerName.includes('museum') || lowerName.includes('national park')) return Building;
+  if (lowerName.includes('walk') || lowerName.includes('trail') || lowerName.includes('jogging')) {
+    if (lowerName.includes('beach') || lowerName.includes('coastal')) return Waves; // Coastal walks get Waves
+    if (lowerName.includes('park') || lowerName.includes('marjan')) return Mountain; // Park/Marjan walks get Mountain
+    return Trees; // General walks/trails get Trees
+  }
+  if (lowerName.includes('beach') || lowerName.includes('coastal')) return Waves;
+  if (lowerName.includes('marjan') || lowerName.includes('park') || lowerName.includes('mountain') || lowerName.includes('viewpoint')) return Mountain;
+  if (lowerName.includes('museum') || lowerName.includes('national park')) return Building; // national park was here
   if (lowerName.includes('rafting') || lowerName.includes('kayaking') || lowerName.includes('quad') || lowerName.includes('zipline')) return Zap;
   if (lowerName.includes('tour') || lowerName.includes('nightlife') || lowerName.includes('playroom')) return VenetianMask;
   if (lowerName.includes('old town') || lowerName.includes('historic')) return Landmark;
@@ -83,11 +87,9 @@ export function ActivitiesSection() {
     setIsMounted(true);
     async function loadActivities() {
       const fetchedActivities = await getActivities();
-      // For demo: Add more diverse activities. These names/descriptions would also need translation.
-      // Ensure demoActivities do not duplicate what might be fetched from getActivities to avoid repetition.
       const demoActivities: Activity[] = [
         { 
-          name: "Old Town Exploration", // Changed from "Old Town Walk" to avoid confusion if getActivities provides a similar one
+          name: "Old Town Exploration", 
           description: "Discover the historic alleys and significant landmarks of Split's ancient core.", 
           iconUrl: "https://picsum.photos/300/200?random=oldcity", 
           isFree: true, 
@@ -99,14 +101,13 @@ export function ActivitiesSection() {
           ]
         },
         { 
-          name: "Zipline Adventure Over Canyon", // Changed for uniqueness
+          name: "Zipline Adventure Over Canyon", 
           description: "Experience an adrenaline rush soaring over a canyon on a zipline.", 
           iconUrl: "https://picsum.photos/300/200?random=ziplinecanyon", 
           isFree: false, 
           dataAiHint: "zipline canyon" 
         },
       ];
-      // Combine and remove duplicates by name, preferring fetchedActivities
       const combinedActivities = [...fetchedActivities, ...demoActivities];
       const uniqueActivities = Array.from(new Map(combinedActivities.map(activity => [activity.name, activity])).values());
       setActivities(uniqueActivities);
@@ -199,4 +200,3 @@ const Leaf = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M12 18c0-5.5 4.5-10 10-10h-2c-4.4 0-8 3.6-8 8v2"/>
   </svg>
 );
-
