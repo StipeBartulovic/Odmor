@@ -53,7 +53,7 @@ export async function getActivities(): Promise<Activity[]> {
   return [
     {
       name: 'Example Nature Walk',
-      description: 'A walk in nature.',
+      description: 'A walk in nature, like exploring Marjan Park or taking a stroll along Žnjan promenade.',
       iconUrl: 'https://picsum.photos/300/200?random=naturewalk',
       isFree: true,
       dataAiHint: 'nature walk',
@@ -64,30 +64,14 @@ export async function getActivities(): Promise<Activity[]> {
     },
     {
       name: 'Example Museum Visit',
-      description: 'A visit to a museum.',
+      description: 'A visit to a local museum to explore art or history.',
       iconUrl: 'https://picsum.photos/300/200?random=museumvisit',
       isFree: false,
       dataAiHint: 'museum art'
       // No subActivities for paid activities in this example
-    },
-    { 
-      name: "Old Town Walk", 
-      description: "Explore the historic streets and landmarks of Split's Old Town.", 
-      iconUrl: "https://picsum.photos/300/200?random=oldtown", 
-      isFree: true, 
-      dataAiHint: "old town",
-      subActivities: [
-        { name: "Diocletian's Palace Self-Guided Tour", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Diocletian's+Palace+Split+Croatia" },
-        { name: "Stroll along Riva Promenade", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Riva+Promenade+Split+Croatia" },
-        { name: "Visit Pjaca (People's Square)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Pjaca+Split+Croatia" }
-      ]
-    },
-    { 
-      name: "Zipline Adventure", 
-      description: "Soar through the treetops on an exhilarating zipline course near Split.", 
-      iconUrl: "https://picsum.photos/300/200?random=zipline", 
-      isFree: false, 
-      dataAiHint: "zipline forest" 
-    },
+    }
+    // "Old Town Walk" and "Zipline Adventure" are provided by demoActivities in ActivitiesSection.tsx
+    // to avoid duplicates and ensure correct, distinct content.
   ];
 }
+
