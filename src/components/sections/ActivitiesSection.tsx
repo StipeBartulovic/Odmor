@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { ActivityCard } from '@/components/shared/ActivityCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Mountain, Waves, Trees, Building, Ticket, Zap, VenetianMask, Loader2 } from 'lucide-react';
+import { Mountain, Waves, Trees, Building, Ticket, Zap, VenetianMask, Loader2, Landmark } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 
@@ -69,6 +69,7 @@ const getActivityIcon = (activityName: string): React.ElementType => {
   if (lowerName.includes('museum') || lowerName.includes('national park')) return Building;
   if (lowerName.includes('rafting') || lowerName.includes('kayaking') || lowerName.includes('quad') || lowerName.includes('zipline')) return Zap;
   if (lowerName.includes('tour') || lowerName.includes('nightlife') || lowerName.includes('playroom')) return VenetianMask;
+  if (lowerName.includes('old town') || lowerName.includes('historic')) return Landmark;
   return Ticket; 
 };
 
@@ -84,10 +85,16 @@ export function ActivitiesSection() {
       const fetchedActivities = await getActivities();
       // For demo: Add more diverse activities. These names/descriptions would also need translation.
       const demoActivities: Activity[] = [
-        { name: "Coastal Trail Hike", description: "Enjoy breathtaking views on this scenic coastal hike.", iconUrl: "https://picsum.photos/300/200?random=hike", isFree: true, dataAiHint: "coastal hike", 
+        { 
+          name: "Old Town Walk", 
+          description: "Explore the historic streets and landmarks of Split's Old Town.", 
+          iconUrl: "https://picsum.photos/300/200?random=oldtown", 
+          isFree: true, 
+          dataAiHint: "old town", 
           subActivities: [
-            { name: "Bačvice Beach Coastal Path", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Bačvice+Beach+Split+Croatia+coastal+path" },
-            { name: "Kašjuni Beach Trail", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Kašjuni+Beach+Split+Croatia+trail" }
+            { name: "Diocletian's Palace Self-Guided Tour", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Diocletian's+Palace+Split+Croatia" },
+            { name: "Stroll along Riva Promenade", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Riva+Promenade+Split+Croatia" },
+            { name: "Visit Pjaca (People's Square)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Pjaca+Split+Croatia" }
           ]
         },
         { name: "Rafting Adventures", description: "Experience thrilling white-water rafting on the nearby river.", iconUrl: "https://picsum.photos/300/200?random=rafting", isFree: false, dataAiHint: "rafting river" },
