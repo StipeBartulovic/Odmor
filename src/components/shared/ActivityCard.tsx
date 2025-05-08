@@ -1,11 +1,10 @@
 "use client";
 
-import type { Activity, SubActivity } from '@/services/activities';
+import type { Activity, SubActivity, SubActivityCategory } from '@/services/activities';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-// Image import removed as it's no longer used
-import { DollarSign, Leaf, Palette, Info, MapPin } from 'lucide-react';
+import { DollarSign, Leaf, Palette, Info, MapPin, List } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
@@ -100,7 +99,6 @@ export function ActivityCard({ activity, icon: IconComponent = Palette }: Activi
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 pt-0">
             <div className="space-y-3">
-              {/* Image component removed from here */}
               <p className="text-sm text-muted-foreground leading-relaxed">{activity.description}</p>
               
               {activity.isFree && activity.subActivities && activity.subActivities.length > 0 && (
@@ -109,7 +107,7 @@ export function ActivityCard({ activity, icon: IconComponent = Palette }: Activi
                     <MapPin className="h-4 w-4 text-primary" />
                     {t('specificLocationsTitle')}
                   </h4>
-                  <ul className="space-y-1.5 pl-1">
+                  <ul className="space-y-1.5 pl-1 ml-5">
                     {activity.subActivities.map((sub, index) => (
                       <li key={index}>
                         <a
@@ -123,6 +121,33 @@ export function ActivityCard({ activity, icon: IconComponent = Palette }: Activi
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {activity.subActivityCategories && activity.subActivityCategories.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-muted/30 space-y-3">
+                  {activity.subActivityCategories.map((category, catIndex) => (
+                    <div key={catIndex}>
+                      <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1">
+                        <List className="h-4 w-4 text-primary" />
+                        {category.title}
+                      </h4>
+                      <ul className="space-y-1.5 pl-1 ml-5">
+                        {category.links.map((link, linkIndex) => (
+                          <li key={linkIndex}>
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-semibold text-primary hover:underline text-sm"
+                            >
+                              {link.name}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
               )}
 
