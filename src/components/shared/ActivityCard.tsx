@@ -2,9 +2,9 @@
 
 import type { Activity, SubActivity } from '@/services/activities';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Card } from "@/components/ui/card"; // CardContent removed as it's not directly used, AccordionContent provides similar structure
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Image from 'next/image';
+// Image import removed as it's no longer used
 import { DollarSign, Leaf, Palette, Info, MapPin } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
@@ -100,16 +100,7 @@ export function ActivityCard({ activity, icon: IconComponent = Palette }: Activi
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 pt-0">
             <div className="space-y-3">
-              {activity.iconUrl && activity.iconUrl.startsWith('https://picsum.photos') && (
-                 <Image
-                    src={activity.iconUrl}
-                    alt={activity.name} 
-                    width={300}
-                    height={200}
-                    className="rounded-md object-cover w-full aspect-[16/10]"
-                    data-ai-hint={activity.dataAiHint || "activity outdoor"}
-                  />
-              )}
+              {/* Image component removed from here */}
               <p className="text-sm text-muted-foreground leading-relaxed">{activity.description}</p>
               
               {activity.isFree && activity.subActivities && activity.subActivities.length > 0 && (
