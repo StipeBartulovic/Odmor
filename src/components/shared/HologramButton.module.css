@@ -1,10 +1,27 @@
 /* src/components/shared/HologramButton.module.css */
+
+/* Define CSS custom properties for theming. Fallbacks are for the "dark mode" / original look. */
 .btn {
+  --hologram-text-color: #fff;
+  --hologram-icon-color: #fff;
+  --hologram-border-color: rgba(0, 255, 255, 0.5);
+  --hologram-bg-color: rgba(0, 255, 255, 0.1);
+  --hologram-box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  --hologram-text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  --hologram-glitch-before-color: #ff00ff; /* Magenta */
+  --hologram-glitch-after-color: #00ffff;  /* Cyan */
+  --hologram-scanline-bg: linear-gradient(
+    to right,
+    transparent,
+    rgba(0, 255, 255, 0.8),
+    transparent
+  );
+
   position: relative;
   padding: 1.5rem 3rem;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--hologram-text-color);
   background: none;
   border: none;
   cursor: pointer;
@@ -16,9 +33,9 @@
 }
 
 .hologram {
-  border: 2px solid rgba(0, 255, 255, 0.5);
-  background: rgba(0, 255, 255, 0.1);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  border: 2px solid var(--hologram-border-color);
+  background: var(--hologram-bg-color);
+  box-shadow: var(--hologram-box-shadow);
   backdrop-filter: blur(5px);
   border-radius: 0.75rem; /* Corresponds to rounded-xl */
 }
@@ -32,13 +49,13 @@
 .iconWrapper svg {
   height: 1.5rem; /* h-6 */
   width: 1.5rem; /* w-6 */
-  color: #fff; /* Match button text or specific cyan */
+  color: var(--hologram-icon-color);
 }
 
 .textElement {
   position: relative;
   display: inline-block;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  text-shadow: var(--hologram-text-shadow);
 }
 
 .textElement::before,
@@ -46,25 +63,25 @@
   content: attr(data-text);
   position: absolute;
   left: 0;
-  width: 100%; /* Ensure it covers the text */
-  top: 0; /* Align with the main text */
+  width: 100%;
+  top: 0;
   opacity: 0;
   filter: blur(1px);
   transition: all 0.3s ease;
-  pointer-events: none; /* Prevent interference */
+  pointer-events: none;
 }
 
 .textElement::before {
-  top: -2px; /* Original value */
-  color: #ff00ff; /* Magenta */
+  top: -2px;
+  color: var(--hologram-glitch-before-color);
   transform: translateX(0);
   animation: glitch 2s infinite;
 }
 
 .textElement::after {
-  bottom: -2px; /* Original value - this will make it appear below and slightly offset */
-  top: auto; /* Override top from ::before inheritance if not explicit*/
-  color: #00ffff; /* Cyan */
+  bottom: -2px;
+  top: auto;
+  color: var(--hologram-glitch-after-color);
   transform: translateX(0);
   animation: glitch 2s infinite reverse;
 }
@@ -73,17 +90,32 @@
   position: absolute;
   width: 100%;
   height: 2px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(0, 255, 255, 0.8),
-    transparent
-  );
+  background: var(--hologram-scanline-bg);
   top: 0;
-  left: 0; /* Ensure it starts from the left edge */
+  left: 0;
   animation: scan 2s linear infinite;
   filter: blur(1px);
 }
+
+/* Light Mode Overrides */
+/* These will apply when the html tag does NOT have the .dark class */
+html:not(.dark) .btn {
+  --hologram-text-color: hsl(var(--primary));
+  --hologram-icon-color: hsl(var(--primary));
+  --hologram-border-color: hsl(var(--muted-foreground)); /* Darker desaturated green, like a dark gray */
+  --hologram-bg-color: hsla(var(--muted), 0.2); /* Muted light green, slightly transparent */
+  --hologram-box-shadow: 0 0 10px hsla(var(--muted-foreground), 0.15);
+  --hologram-text-shadow: 0 0 6px hsla(var(--primary), 0.3);
+  --hologram-glitch-before-color: hsla(var(--primary), 0.7);
+  --hologram-glitch-after-color: hsla(var(--secondary), 0.7);
+  --hologram-scanline-bg: linear-gradient(
+    to right,
+    transparent,
+    hsla(var(--primary), 0.4),
+    transparent
+  );
+}
+
 
 @keyframes glitch {
   0%, 100% { transform: translateX(0) skewX(0); opacity: 0.3; }
