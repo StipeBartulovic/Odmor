@@ -1,3 +1,4 @@
+// src/app/page.tsx
 'use client'; 
 
 import { AppHeader } from '@/components/shared/AppHeader';
@@ -5,7 +6,7 @@ import { AiPromptInterface } from '@/components/sections/AiPromptInterface';
 import { InteractiveMap } from '@/components/sections/InteractiveMap';
 import { ActivitiesSection } from '@/components/sections/ActivitiesSection';
 import { EventsSection } from '@/components/sections/EventsSection';
-import { Lightbulb, Loader2 } from 'lucide-react';
+import { Lightbulb, Link as LinkIconLucide, Loader2 } from 'lucide-react'; // Renamed Link to LinkIconLucide to avoid conflict
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
@@ -20,6 +21,14 @@ const pageTranslations = {
     pl: 'Lokalne Wskazówki i Informacje',
     fr: 'Conseils et Infos Locales',
     es: 'Consejos e Información Local',
+  },
+  usefulLinksButton: {
+    en: 'Useful Tourist Links',
+    it: 'Link Utili per Turisti',
+    de: 'Nützliche Touristenlinks',
+    pl: 'Przydatne Linki Turystyczne',
+    fr: 'Liens Touristiques Utiles',
+    es: 'Enlaces Turísticos Útiles',
   },
   footerRights: {
     en: 'All rights reserved.',
@@ -52,6 +61,7 @@ export default function HomePage() {
   }, []);
   
   const handleAuthentication = (password: string): boolean => {
+    // Basic password check, in a real app, this would be more secure
     if (password === '1234') {
       setIsAuthenticated(true);
       return true;
@@ -89,12 +99,20 @@ export default function HomePage() {
         <EventsSection />
 
         <section className="py-8 md:py-12 text-center">
-          <HologramButton
-            href="/tips"
-            text={t('tipsButton')}
-            icon={<Lightbulb />}
-            ariaLabel={t('tipsButton')}
-          />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
+            <HologramButton
+              href="/tips"
+              text={t('tipsButton')}
+              icon={<Lightbulb />}
+              ariaLabel={t('tipsButton')}
+            />
+            <HologramButton
+              href="/useful-links"
+              text={t('usefulLinksButton')}
+              icon={<LinkIconLucide />} 
+              ariaLabel={t('usefulLinksButton')}
+            />
+          </div>
         </section>
       </main>
       <footer className="py-8 bg-muted text-center">
@@ -107,3 +125,4 @@ export default function HomePage() {
     </div>
   );
 }
+
