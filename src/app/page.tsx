@@ -60,7 +60,6 @@ export default function HomePage() {
     setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
     
-    // Check localStorage for persisted authentication state
     const storedAuth = localStorage.getItem(AUTH_KEY);
     if (storedAuth === 'true') {
       setIsAuthenticated(true);
@@ -68,10 +67,9 @@ export default function HomePage() {
   }, []);
   
   const handleAuthentication = (password: string): boolean => {
-    // Basic password check, in a real app, this would be more secure
     if (password === '1234') {
       setIsAuthenticated(true);
-      localStorage.setItem(AUTH_KEY, 'true'); // Persist authentication state
+      localStorage.setItem(AUTH_KEY, 'true'); 
       return true;
     }
     return false;
@@ -84,7 +82,6 @@ export default function HomePage() {
   };
   
   if (!isMounted || currentYear === null) {
-    // Render a loader or minimal skeleton to prevent hydration mismatch
     return (
       <div className="flex flex-col min-h-screen bg-background items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -100,6 +97,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
+      {/* The AppHeader is now sticky, so main content does not need explicit top padding related to header height here */}
       <main className="flex-grow container mx-auto px-4 py-8 space-y-12 md:space-y-16">
         <AiPromptInterface />
         <InteractiveMap />
