@@ -83,7 +83,7 @@ export const usefulLinksData: UsefulLinkCategory[] = [
     links: [
       { text: { en: 'HAK Road Conditions', it: 'Condizioni Stradali HAK', de: 'HAK Straßenbedingungen', pl: 'Warunki Drogowe HAK', fr: 'Conditions Routières HAK', es: 'Condiciones de Carretera HAK' }, url: 'https://www.hak.hr/info/stanje-na-cestama/', icon: 'TrafficCone' },
       { text: { en: 'HAK Live Cameras', it: 'Telecamere Live HAK', de: 'HAK Live-Kameras', pl: 'Kamery na Żywo HAK', fr: 'Caméras en Direct HAK', es: 'Cámaras en Vivo HAK' }, url: 'https://www.hak.hr/info/kamere/', icon: 'Camera' },
-      { text: { en: 'Jadrolinija', it: 'Jadrolinija', de: 'Jadrolinija', pl: 'Jadrolinija', fr: 'Jadrolinija', es: 'Jadrolinija' }, url: 'https://www.jadrolinija.hr/', icon: 'Ferry' },
+      { text: { en: 'Jadrolinija', it: 'Jadrolinija', de: 'Jadrolinija', pl: 'Jadrolinija', fr: 'Jadrolinija', es: 'Jadrolinija' }, url: 'https://www.jadrolinija.hr/', icon: 'Ship' }, 
       { text: { en: 'Croatia Bus', it: 'Croatia Bus', de: 'Croatia Bus', pl: 'Croatia Bus', fr: 'Croatia Bus', es: 'Croatia Bus' }, url: 'https://www.croatiabus.hr/', icon: 'Bus' },
       { text: { en: 'HŽ Passenger Rail', it: 'HŽ Trasporto Passeggeri', de: 'HŽ Personenverkehr', pl: 'HŽ Przewozy Pasażerskie', fr: 'HŽ Transport de Passagers', es: 'HŽ Transporte de Pasajeros' }, url: 'https://www.hzpp.hr/', icon: 'Train' },
     ],
@@ -209,3 +209,4 @@ export const usefulLinksData: UsefulLinkCategory[] = [
     ],
   },
 ];
+

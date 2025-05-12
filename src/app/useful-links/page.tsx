@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usefulLinksData, type UsefulLinkCategory, type UsefulLinkItem } from '@/data/usefulLinks';
 import { 
   ArrowLeft, ExternalLink, Loader2, Mountain, CloudSun, Car, Landmark, Compass, BedDouble, ShieldAlert, Globe2,
-  Map as MapIcon, Trees, Route, Thermometer, CloudDrizzle, Wind, TrafficCone, Camera, Ferry, Bus, Train,
+  Map as MapIcon, Trees, Route, Thermometer, CloudDrizzle, Wind, TrafficCone, Camera, Ship, Bus, Train, // Changed Ferry to Ship
   Globe, Building, BookOpen, Navigation, Bike, Footprints, Tent, Hotel, Home, PhoneForwarded, AlertTriangle,
-  Languages, Ticket as TicketIcon
-} from 'lucide-react'; // Renamed Ticket to TicketIcon
+  Languages, Ticket as TicketIcon, Link as LinkIconLucide // Renamed Ticket to TicketIcon, Added LinkIconLucide
+} from 'lucide-react'; 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -74,7 +74,8 @@ const getLinkIconElement = (iconName?: string): React.ElementType => {
     case 'Car': return Car;
     case 'TrafficCone': return TrafficCone;
     case 'Camera': return Camera;
-    case 'Ferry': return Ferry;
+    case 'Ship': return Ship; 
+    case 'Ferry': return Ship; // Handle old 'Ferry' name, map to Ship
     case 'Bus': return Bus;
     case 'Train': return Train;
     case 'Landmark': return Landmark;
@@ -145,7 +146,7 @@ export default function UsefulLinksPage() {
 
         <header className="text-center space-y-4 mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-primary flex items-center justify-center gap-3">
-            <Link className="h-10 w-10" /> {/* Using Link from lucide-react */}
+            <LinkIconLucide className="h-10 w-10" /> {/* Using LinkIconLucide from lucide-react */}
             {t('title')}
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -197,3 +198,4 @@ export default function UsefulLinksPage() {
     </div>
   );
 }
+
