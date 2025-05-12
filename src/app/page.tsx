@@ -48,6 +48,7 @@ const pageTranslations = {
   }
 };
 
+const AUTH_KEY = 'stibar_authenticated';
 
 export default function HomePage() {
   const { selectedLanguage } = useLanguage(); 
@@ -58,12 +59,19 @@ export default function HomePage() {
   useEffect(() => {
     setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
+    
+    // Check localStorage for persisted authentication state
+    const storedAuth = localStorage.getItem(AUTH_KEY);
+    if (storedAuth === 'true') {
+      setIsAuthenticated(true);
+    }
   }, []);
   
   const handleAuthentication = (password: string): boolean => {
     // Basic password check, in a real app, this would be more secure
     if (password === '1234') {
       setIsAuthenticated(true);
+      localStorage.setItem(AUTH_KEY, 'true'); // Persist authentication state
       return true;
     }
     return false;
@@ -72,7 +80,7 @@ export default function HomePage() {
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
     // @ts-ignore
-    return pageTranslations[fieldKey][langToUse] || pageTranslations[fieldKey]['en'];
+    return pageTranslations[fieldKey]?.[langToUse] || pageTranslations[fieldKey]?.['en'] || String(fieldKey);
   };
   
   if (!isMounted || currentYear === null) {
@@ -125,4 +133,3 @@ export default function HomePage() {
     </div>
   );
 }
-
