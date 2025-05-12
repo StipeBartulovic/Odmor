@@ -4,6 +4,7 @@ interface UsefulLinkItem {
   text: Record<string, string>; // Translated link text
   url: string;
   icon: string; // Lucide icon name
+  description?: Record<string, string>; // Optional translated description
 }
 
 export interface UsefulLinkCategory {
@@ -209,4 +210,5 @@ export const usefulLinksData: UsefulLinkCategory[] = [
     ],
   },
 ];
+
 

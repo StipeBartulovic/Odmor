@@ -62,42 +62,41 @@ const pageTranslations = {
 
 const getLinkIconElement = (iconName?: string): React.ElementType => {
   if (!iconName) return Globe2; 
-  switch (iconName) {
-    case 'Mountain': return Mountain;
-    case 'Map': return MapIcon;
-    case 'Trees': return Trees;
-    case 'Route': return Route;
-    case 'CloudSun': return CloudSun;
-    case 'Thermometer': return Thermometer;
-    case 'CloudDrizzle': return CloudDrizzle;
-    case 'Wind': return Wind;
-    case 'Car': return Car;
-    case 'TrafficCone': return TrafficCone;
-    case 'Camera': return Camera;
-    case 'Ship': return Ship; 
-    case 'Ferry': return Ship; 
-    case 'Bus': return Bus;
-    case 'Train': return Train;
-    case 'Landmark': return Landmark;
-    case 'Globe': return Globe;
-    case 'Building': return Building;
-    case 'BookOpen': return BookOpen;
-    case 'Compass': return Compass;
-    case 'Navigation': return Navigation;
-    case 'Bike': return Bike;
-    case 'Footprints': return Footprints;
-    case 'BedDouble': return BedDouble;
-    case 'Tent': return Tent;
-    case 'Hotel': return Hotel;
-    case 'Home': return Home;
-    case 'ShieldAlert': return ShieldAlert;
-    case 'PhoneForwarded': return PhoneForwarded;
-    case 'AlertTriangle': return AlertTriangle;
-    case 'Globe2': return Globe2;
-    case 'Languages': return Languages;
-    case 'Ticket': return TicketIcon;
-    default: return Globe2;
-  }
+  const iconMap: { [key: string]: React.ElementType } = {
+    Mountain,
+    Map: MapIcon, // Alias for Map to avoid conflict with JS Map
+    Trees,
+    Route,
+    CloudSun,
+    Thermometer,
+    CloudDrizzle,
+    Wind,
+    Car,
+    TrafficCone,
+    Camera,
+    Ship, // Used for Ferry as well
+    Bus,
+    Train,
+    Landmark,
+    Globe,
+    Building,
+    BookOpen,
+    Compass,
+    Navigation,
+    Bike,
+    Footprints,
+    BedDouble,
+    Tent,
+    Hotel,
+    Home,
+    ShieldAlert,
+    PhoneForwarded,
+    AlertTriangle,
+    Globe2,
+    Languages,
+    Ticket: TicketIcon, // Alias for Ticket
+  };
+  return iconMap[iconName] || Globe2;
 };
 
 
@@ -178,7 +177,6 @@ export default function UsefulLinksPage() {
                         <span className="font-medium">{getLocalizedText(linkItem.text)}</span>
                         <ExternalLink className="h-4 w-4 shrink-0 opacity-70" />
                       </Link>
-                      {/* @ts-ignore */}
                       {linkItem.description && <p className="text-xs text-muted-foreground ml-7 -mt-1">{getLocalizedText(linkItem.description)}</p>}
                     </li>
                   ))}
@@ -198,3 +196,4 @@ export default function UsefulLinksPage() {
     </div>
   );
 }
+
