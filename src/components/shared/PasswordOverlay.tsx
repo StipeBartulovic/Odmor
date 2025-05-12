@@ -1,10 +1,12 @@
+
 'use client';
 
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, Mail } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 interface PasswordOverlayProps {
   onAuthenticate: (password: string) => boolean;
@@ -12,11 +14,13 @@ interface PasswordOverlayProps {
 
 export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(''); // Clear previous error
+    // Email is captured but not validated or used for authentication in this version
     if (onAuthenticate(password)) {
       // Parent component will handle hiding this overlay by re-rendering
     } else {
@@ -33,18 +37,40 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
           Travel deeper. Go beyond the brochure.
         </h2>
         <p className="text-muted-foreground mb-8 text-sm">
-          Please enter the password to access Stibar.
+          Please enter your email and the password to access Stibar.
         </p>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="text-center text-lg h-12 rounded-lg shadow-sm focus:ring-primary focus:border-primary"
-            aria-label="Password"
-            autoFocus
-          />
+          <div className="space-y-2">
+            <Label htmlFor="email-overlay" className="flex items-center justify-start text-foreground">
+              <Mail className="mr-2 h-5 w-5 text-primary" />
+              Email (Optional)
+            </Label>
+            <Input
+              id="email-overlay"
+              type="email"
+              placeholder="your.email@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="text-lg h-12 rounded-lg shadow-sm focus:ring-primary focus:border-primary"
+              aria-label="Email"
+            />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="password-overlay" className="flex items-center justify-start text-foreground">
+               <KeyRound className="mr-2 h-5 w-5 text-primary" />
+              Password
+            </Label>
+            <Input
+              id="password-overlay"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="text-lg h-12 rounded-lg shadow-sm focus:ring-primary focus:border-primary"
+              aria-label="Password"
+              autoFocus
+            />
+          </div>
           {error && <p className="text-sm text-destructive font-medium">{error}</p>}
           <Button type="submit" className="w-full text-lg py-3 rounded-lg shadow-md bg-primary hover:bg-primary/90 h-12">
             Unlock Stibar
@@ -54,3 +80,4 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
     </div>
   );
 }
+
