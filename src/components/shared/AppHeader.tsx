@@ -2,7 +2,8 @@
 'use client';
 
 import Link from 'next/link';
-import { PlaneTakeoff, Lightbulb, Link as LinkIconLucide, Loader2 } from 'lucide-react';
+import { Lightbulb, Link as LinkIconLucide } from 'lucide-react';
+import { AppLogo } from './AppLogo'; // Import the new logo
 import { ThemeToggleButton } from './ThemeToggleButton';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Button } from '@/components/ui/button';
@@ -71,7 +72,8 @@ export function AppHeader() {
       <header className="py-6 bg-background shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <PlaneTakeoff className="h-8 w-8 text-primary opacity-50" />
+            {/* Placeholder for AppLogo */}
+            <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
             <div className="h-8 w-20 bg-muted rounded animate-pulse"></div>
           </div>
           <div className="flex items-center gap-3">
@@ -88,12 +90,12 @@ export function AppHeader() {
   return (
     <header className="py-6 bg-background shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <PlaneTakeoff className="h-8 w-8 text-primary" />
+        <Link href="/" className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">
+          <AppLogo className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold text-primary tracking-tight">
             {tAppTitle}
           </h1>
-        </div>
+        </Link>
         <div className="flex items-center gap-3">
           <Link href="/tips" passHref>
             <Button variant="ghost" size="sm" className="text-sm hidden md:inline-flex">
@@ -112,4 +114,3 @@ export function AppHeader() {
     </header>
   );
 }
-
