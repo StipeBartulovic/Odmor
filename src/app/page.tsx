@@ -49,7 +49,7 @@ const pageTranslations = {
   }
 };
 
-const AUTH_KEY = 'stibar_authenticated';
+const AUTH_KEY = 'odmarai_authenticated';
 
 export default function HomePage() {
   const { selectedLanguage } = useLanguage(); 
@@ -127,7 +127,7 @@ export default function HomePage() {
       <footer className="py-8 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} Stibar. {t('footerRights')}
+            &copy; {currentYear} odmarAi. {t('footerRights')}
           </p>
         </div>
       </footer>

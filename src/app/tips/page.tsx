@@ -343,7 +343,7 @@ export default function TipsPage() {
       <footer className="py-8 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} Stibar. {t('footerRights') as string}
+            &copy; {currentYear} odmarAi. {t('footerRights') as string}
           </p>
         </div>
       </footer>

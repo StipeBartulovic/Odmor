@@ -11,12 +11,12 @@ import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
 
 const appTitleTranslations: Record<string, string> = {
-  en: 'Stibar',
-  it: 'Stibar', 
-  de: 'Stibar',
-  pl: 'Stibar',
-  fr: 'Stibar',
-  es: 'Stibar',
+  en: 'odmarAi',
+  it: 'odmarAi', 
+  de: 'odmarAi',
+  pl: 'odmarAi',
+  fr: 'odmarAi',
+  es: 'odmarAi',
 };
 
 const headerLinkTranslations = {
@@ -75,10 +75,12 @@ export function AppHeader() {
             <div className="h-8 w-20 bg-muted rounded animate-pulse"></div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-8 w-24 bg-muted rounded animate-pulse"></div>
-            <div className="h-8 w-24 bg-muted rounded animate-pulse"></div>
-            <div className="h-8 w-12 bg-muted rounded-full animate-pulse"></div>
-            <div className="h-8 w-8 bg-muted rounded-full animate-pulse"></div>
+            <div className="h-8 w-24 bg-muted rounded animate-pulse md:hidden"></div>
+            <div className="h-8 w-24 bg-muted rounded animate-pulse md:hidden"></div>
+            <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:block"></div>
+            <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:block"></div>
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div>
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div>
           </div>
         </div>
       </header>

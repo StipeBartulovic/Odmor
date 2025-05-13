@@ -37,7 +37,7 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
           Travel deeper. Go beyond the brochure.
         </h2>
         <p className="text-muted-foreground mb-8 text-sm">
-          Please enter your email and the password to access Stibar.
+          Please enter your email and the password to access odmarAi.
         </p>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -73,7 +73,7 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
           </div>
           {error && <p className="text-sm text-destructive font-medium">{error}</p>}
           <Button type="submit" className="w-full text-lg py-3 rounded-lg shadow-md bg-primary hover:bg-primary/90 h-12">
-            Unlock Stibar
+            Unlock odmarAi
           </Button>
         </form>
       </div>

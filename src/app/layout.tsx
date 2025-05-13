@@ -1,3 +1,4 @@
+// src/app/layout.tsx
 'use client'; // Required for useEffect and useLanguage
 
 import type { ReactNode } from 'react';
@@ -15,12 +16,12 @@ const geistSans = GeistSans;
 
 const layoutTranslations = {
   title: {
-    en: 'Stibar - Your Personal Travel Assistant',
-    it: 'Stibar - Il Tuo Assistente di Viaggio Personale',
-    de: 'Stibar - Ihr Persönlicher Reiseassistent',
-    pl: 'Stibar - Twój Osobisty Asystent Podróży',
-    fr: 'Stibar - Votre Assistant de Voyage Personnel',
-    es: 'Stibar - Tu Asistente de Viaje Personal',
+    en: 'odmarAi - Your Personal Travel Assistant',
+    it: 'odmarAi - Il Tuo Assistente di Viaggio Personale',
+    de: 'odmarAi - Ihr Persönlicher Reiseassistent',
+    pl: 'odmarAi - Twój Osobisty Asystent Podróży',
+    fr: 'odmarAi - Votre Assistant de Voyage Personnel',
+    es: 'odmarAi - Tu Asistente de Viaje Personal',
   },
   description: {
     en: 'Generate personalized travel journeys with AI.',
