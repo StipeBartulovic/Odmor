@@ -73,8 +73,8 @@ export function AppHeader() {
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Placeholder for AppLogo */}
-            <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
-            <div className="h-8 w-20 bg-muted rounded animate-pulse"></div>
+            <div className="h-10 w-10 bg-muted rounded animate-pulse"></div>
+            <div className="h-8 w-24 bg-muted rounded animate-pulse"></div>
           </div>
           <div className="flex items-center gap-3">
             <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:inline-flex"></div>
@@ -91,7 +91,7 @@ export function AppHeader() {
     <header className="py-6 bg-background shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">
-          <AppLogo className="h-8 w-8 text-primary" />
+          <AppLogo className="h-10 w-10 text-primary" /> {/* Increased size from h-8 w-8 */}
           <h1 className="text-3xl font-bold text-primary tracking-tight">
             {tAppTitle}
           </h1>
@@ -114,3 +114,4 @@ export function AppHeader() {
     </header>
   );
 }
+
