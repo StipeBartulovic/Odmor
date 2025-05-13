@@ -238,12 +238,10 @@ export default function UsefulLinksPage() {
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6 space-y-3">
-            <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-              <li>{t('newsItem1')}</li>
-              <li>{t('newsItem2')}</li>
-              <li>{t('newsItem3')}</li>
-            </ul>
+          <CardContent className="p-4 md:p-6 space-y-3 text-muted-foreground">
+            <p className="text-sm md:text-base">{t('newsItem1')}</p>
+            <p className="text-sm md:text-base">{t('newsItem2')}</p>
+            <p className="text-sm md:text-base">{t('newsItem3')}</p>
           </CardContent>
         </Card>
 
@@ -258,4 +256,3 @@ export default function UsefulLinksPage() {
     </div>
   );
 }
-
