@@ -6,6 +6,7 @@ import { AiPromptInterface } from '@/components/sections/AiPromptInterface';
 import { InteractiveMap } from '@/components/sections/InteractiveMap';
 import { ActivitiesSection } from '@/components/sections/ActivitiesSection';
 import { EventsSection } from '@/components/sections/EventsSection';
+import { QuickMessageSection } from '@/components/sections/QuickMessageSection';
 import { Lightbulb, Link as LinkIconLucide, Loader2 } from 'lucide-react'; // Renamed Link to LinkIconLucide to avoid conflict
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
@@ -78,7 +79,8 @@ export default function HomePage() {
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
     // @ts-ignore
-    return pageTranslations[fieldKey]?.[langToUse] || pageTranslations[fieldKey]?.['en'] || String(fieldKey);
+    const translation = pageTranslations[fieldKey]?.[langToUse] || pageTranslations[fieldKey]?.['en'];
+    return typeof translation === 'string' ? translation : String(fieldKey);
   };
   
   if (!isMounted || currentYear === null) {
@@ -103,6 +105,7 @@ export default function HomePage() {
         <InteractiveMap />
         <ActivitiesSection />
         <EventsSection />
+        <QuickMessageSection />
 
         <section className="py-8 md:py-12 text-center">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
