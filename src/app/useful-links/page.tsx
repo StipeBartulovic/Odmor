@@ -229,7 +229,7 @@ export default function UsefulLinksPage() {
         </div>
 
         {/* Live News Section */}
-        <Card className="shadow-xl rounded-xl mt-12">
+        <Card className="shadow-xl rounded-xl mt-12 border-2 border-primary animate-pulse">
           <CardHeader className="bg-muted/30 p-4 md:p-6">
             <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
               <RadioTower className="h-7 w-7 text-primary" />
@@ -258,3 +258,4 @@ export default function UsefulLinksPage() {
     </div>
   );
 }
+
