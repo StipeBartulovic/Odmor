@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Lightbulb, Link as LinkIconLucide } from 'lucide-react';
+import { Lightbulb, Link as LinkIconLucide, MessageSquarePlus } from 'lucide-react';
 import { AppLogo } from './AppLogo'; // Import the new logo
 import { ThemeToggleButton } from './ThemeToggleButton';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -37,6 +37,14 @@ const headerLinkTranslations = {
     fr: 'Liens Utiles',
     es: 'Enlaces Útiles',
   },
+  tellUsMoreLink: {
+    en: 'Tell us more',
+    it: 'Dicci di più',
+    de: 'Erzähl uns mehr',
+    pl: 'Powiedz nam więcej',
+    fr: 'Dites-nous en plus',
+    es: 'Cuéntanos más',
+  }
 };
 
 const loadingTranslations: Record<string, string> = {
@@ -79,6 +87,7 @@ export function AppHeader() {
           <div className="flex items-center gap-3">
             <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:inline-flex"></div>
             <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:inline-flex"></div>
+            <div className="h-10 w-24 bg-muted rounded-md animate-pulse hidden md:inline-flex"></div> {/* Tell us more placeholder */}
             <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div> {/* LanguageSwitcher placeholder */}
             <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div> {/* ThemeToggleButton placeholder */}
           </div>
@@ -96,15 +105,20 @@ export function AppHeader() {
             {tAppTitle}
           </h1>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link href="/tips" passHref>
-            <Button variant="ghost" size="sm" className="text-sm hidden md:inline-flex">
-              <Lightbulb className="mr-2 h-4 w-4" /> {t('localTipsLink')}
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm hidden md:inline-flex">
+              <Lightbulb className="mr-1 sm:mr-2 h-4 w-4" /> {t('localTipsLink')}
             </Button>
           </Link>
           <Link href="/useful-links" passHref>
-            <Button variant="ghost" size="sm" className="text-sm hidden md:inline-flex">
-              <LinkIconLucide className="mr-2 h-4 w-4" /> {t('usefulLinksLink')}
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm hidden md:inline-flex">
+              <LinkIconLucide className="mr-1 sm:mr-2 h-4 w-4" /> {t('usefulLinksLink')}
+            </Button>
+          </Link>
+          <Link href="/feedback" passHref>
+            <Button variant="link" size="sm" className="text-xs sm:text-sm text-muted-foreground hover:text-primary px-1 sm:px-2">
+               <MessageSquarePlus className="mr-1 sm:mr-2 h-4 w-4" /> {t('tellUsMoreLink')}
             </Button>
           </Link>
           <LanguageSwitcher />
@@ -114,4 +128,3 @@ export function AppHeader() {
     </header>
   );
 }
-

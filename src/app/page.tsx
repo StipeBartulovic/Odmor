@@ -6,7 +6,7 @@ import { AiPromptInterface } from '@/components/sections/AiPromptInterface';
 import { InteractiveMap } from '@/components/sections/InteractiveMap';
 import { ActivitiesSection } from '@/components/sections/ActivitiesSection';
 import { EventsSection } from '@/components/sections/EventsSection';
-import { QuickMessageSection } from '@/components/sections/QuickMessageSection';
+// QuickMessageSection import removed
 import { Lightbulb, Link as LinkIconLucide, Loader2 } from 'lucide-react'; // Renamed Link to LinkIconLucide to avoid conflict
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
@@ -105,7 +105,7 @@ export default function HomePage() {
         <InteractiveMap />
         <ActivitiesSection />
         <EventsSection />
-        <QuickMessageSection />
+        {/* QuickMessageSection removed from here */}
 
         <section className="py-8 md:py-12 text-center">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
@@ -134,4 +134,3 @@ export default function HomePage() {
     </div>
   );
 }
-
