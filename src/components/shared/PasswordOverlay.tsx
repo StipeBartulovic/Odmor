@@ -34,7 +34,7 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
       <div className="bg-card p-8 rounded-xl shadow-2xl w-full max-w-md text-center border border-border">
         <KeyRound className="mx-auto h-16 w-16 text-primary mb-6" />
         <h2 className="text-2xl font-semibold text-foreground mb-3">
-          Travel deeper. Go beyond the brochure.
+          Travel farther. Go beyond the brochure.
         </h2>
         <p className="text-muted-foreground mb-8 text-sm">
           Please enter your email and the password to access odmarAi.
