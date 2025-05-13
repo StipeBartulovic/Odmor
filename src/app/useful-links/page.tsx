@@ -9,7 +9,7 @@ import {
   ArrowLeft, ExternalLink, Loader2, Mountain, CloudSun, Car, Landmark, Compass, BedDouble, ShieldAlert, Globe2,
   Map as MapIcon, Trees, Route, Thermometer, CloudDrizzle, Wind, TrafficCone, Camera, Ship, Bus, Train, 
   Globe, Building, BookOpen, Navigation, Bike, Footprints, Tent, Hotel, Home, PhoneForwarded, AlertTriangle,
-  Languages, Ticket as TicketIcon, Link as LinkIconLucide 
+  Languages, Ticket as TicketIcon, Link as LinkIconLucide, RadioTower
 } from 'lucide-react'; 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ const pageTranslations = {
     de: 'Zusammengestellte Ressourcen, die Ihnen bei der Planung und dem Genuss Ihrer Reise nach Kroatien helfen.',
     pl: 'Wyselekcjonowane zasoby, które pomogą Ci zaplanować i cieszyć się podróżą do Chorwacji.',
     fr: 'Ressources organisées pour vous aider à planifier et à profiter de votre voyage en Croatie.',
-    es: 'Recursos seleccionados para ayudarte a planificar y disfrutar tu viaje a Croacia.',
+    es: 'Recursos seleccionados para ayudarte a planificar y disfrutar tu viaje a Croacia.'
   },
   goBackButton: {
     en: 'Go Back',
@@ -57,7 +57,47 @@ const pageTranslations = {
     pl: 'Ładowanie linków...',
     fr: 'Chargement des liens...',
     es: 'Cargando enlaces...',
-  }
+  },
+  liveNewsPrefix: {
+    en: 'Live',
+    it: 'Dal Vivo',
+    de: 'Live',
+    pl: 'Na Żywo',
+    fr: 'En Direct',
+    es: 'En Vivo',
+  },
+  liveNewsSuffix: {
+    en: 'News',
+    it: 'Notizie',
+    de: 'Nachrichten',
+    pl: 'Wiadomości',
+    fr: 'Actualités',
+    es: 'Noticias',
+  },
+  newsItem1: {
+    en: 'Traffic accident on Poljička street, use detour.',
+    it: 'Incidente stradale in via Poljička, utilizzare la deviazione.',
+    de: 'Verkehrsunfall auf der Poljička-Straße, Umleitung benutzen.',
+    pl: 'Wypadek drogowy na ulicy Poljičkiej, korzystaj z objazdu.',
+    fr: 'Accident de la route rue Poljička, utilisez la déviation.',
+    es: 'Accidente de tráfico en la calle Poljička, utilice el desvío.',
+  },
+  newsItem2: {
+    en: 'Žnjan beach opens in 15 days.',
+    it: 'La spiaggia di Žnjan apre tra 15 giorni.',
+    de: 'Der Strand Žnjan öffnet in 15 Tagen.',
+    pl: 'Plaża Žnjan zostanie otwarta za 15 dni.',
+    fr: 'La plage de Žnjan ouvre dans 15 jours.',
+    es: 'La playa de Žnjan abre en 15 días.',
+  },
+  newsItem3: {
+    en: 'On Sunday, only Kaufland will be open among large supermarkets.',
+    it: 'Domenica, tra i grandi supermercati, sarà aperto solo Kaufland.',
+    de: 'Am Sonntag hat von den großen Supermärkten nur Kaufland geöffnet.',
+    pl: 'W niedzielę spośród dużych supermarketów otwarty będzie tylko Kaufland.',
+    fr: 'Dimanche, seul Kaufland sera ouvert parmi les grands supermarchés.',
+    es: 'El domingo, solo Kaufland estará abierto entre los grandes supermercados.',
+  },
 };
 
 const getLinkIconElement = (iconName?: string): React.ElementType => {
@@ -74,7 +114,7 @@ const getLinkIconElement = (iconName?: string): React.ElementType => {
     Car,
     TrafficCone,
     Camera,
-    Ship, // Used for Ferry as well
+    Ship, 
     Bus,
     Train,
     Landmark,
@@ -94,7 +134,8 @@ const getLinkIconElement = (iconName?: string): React.ElementType => {
     AlertTriangle,
     Globe2,
     Languages,
-    Ticket: TicketIcon, // Alias for Ticket
+    Ticket: TicketIcon,
+    RadioTower,
   };
   return iconMap[iconName] || Globe2;
 };
@@ -114,7 +155,8 @@ export default function UsefulLinksPage() {
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
     // @ts-ignore
-    return pageTranslations[fieldKey]?.[langToUse] || pageTranslations[fieldKey]?.['en'] || fieldKey;
+    const translation = pageTranslations[fieldKey]?.[langToUse] || pageTranslations[fieldKey]?.['en'];
+    return typeof translation === 'string' ? translation : String(fieldKey);
   };
   
   const getLocalizedText = (textObj: Record<string, string> | undefined): string => {
@@ -185,6 +227,26 @@ export default function UsefulLinksPage() {
             </Card>
           ))}
         </div>
+
+        {/* Live News Section */}
+        <Card className="shadow-xl rounded-xl mt-12">
+          <CardHeader className="bg-muted/30 p-4 md:p-6">
+            <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+              <RadioTower className="h-7 w-7 text-primary" />
+              <span>
+                <span className="animate-pulse text-primary font-bold">{t('liveNewsPrefix')}</span> {t('liveNewsSuffix')}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6 space-y-3">
+            <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+              <li>{t('newsItem1')}</li>
+              <li>{t('newsItem2')}</li>
+              <li>{t('newsItem3')}</li>
+            </ul>
+          </CardContent>
+        </Card>
+
       </main>
       <footer className="py-8 bg-muted text-center">
         <div className="container mx-auto px-4">
@@ -196,4 +258,3 @@ export default function UsefulLinksPage() {
     </div>
   );
 }
-
