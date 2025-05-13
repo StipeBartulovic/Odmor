@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider"; // Added Slider import
+import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather, ListChecks } from 'lucide-react';
 import { format } from "date-fns";
@@ -143,13 +143,13 @@ const translations = {
     fr: 'ex., J\'adore la randonnée, préfère les endroits calmes, allergique aux fruits de mer.',
     es: 'p.ej., Me encanta el senderismo, prefiero lugares tranquilos, alérgico/a a los mariscos.',
   },
-  detailLevelLabel: {
-    en: 'Journey Detail Level',
-    it: 'Livello Dettaglio Viaggio',
-    de: 'Detailgrad der Reise',
-    pl: 'Poziom Szczegółowości Planu',
-    fr: 'Niveau de Détail du Voyage',
-    es: 'Nivel de Detalle del Viaje',
+  detailLevelLabel: { // Changed from scheduleDensityLabel for consistency, but the displayed text is what matters
+    en: 'Schedule Density',
+    it: 'Densità Programma',
+    de: 'Zeitplandichte',
+    pl: 'Gęstość Harmonogramu',
+    fr: 'Densité de l\'Emploi du Temps',
+    es: 'Densidad del Horario',
   },
   detailLevelOption0: {
     en: 'Light Outline: Minimal guidance, lots of room for spontaneity.',
@@ -212,7 +212,28 @@ const translations = {
 const renderJourney = (text: string) => {
   if (!text) return null;
 
-  const sections = text.split(/\n\s*(?=[A-Za-z\s]+:)/) 
+  // Try to parse if it's a JSON string containing the actual journey string
+  let journeyText = text;
+  try {
+    const parsedText = JSON.parse(text);
+    // Check if parsing resulted in an object with an 'output' field, as per the n8n example
+    if (typeof parsedText === 'object' && parsedText !== null && typeof parsedText.output === 'string') {
+      journeyText = parsedText.output;
+    } else if (Array.isArray(parsedText) && parsedText.length > 0 && typeof parsedText[0].output === 'string') {
+      // Handle array of objects with 'output' field
+      journeyText = parsedText[0].output;
+    }
+    // If it's just a string after parsing (meaning the original string was double-encoded JSON of a string)
+    else if (typeof parsedText === 'string') {
+        journeyText = parsedText;
+    }
+  } catch (e) {
+    // If parsing fails, assume 'text' is already the direct journey string
+    // console.warn("Journey text is not a parsable JSON containing 'output', displaying as is.", e);
+  }
+
+
+  const sections = journeyText.split(/\n\s*(?=[A-Za-z\s\dčćšđžČĆŠĐŽ\(\)]+:)/)
     .map(section => section.trim())
     .filter(section => section.length > 0);
 
@@ -220,17 +241,20 @@ const renderJourney = (text: string) => {
     const lines = section.split('\n');
     const titleLine = lines[0];
     const contentLines = lines.slice(1);
-
+    
+    // Enhanced heading detection
     const isHeading = titleLine.endsWith(':') || 
-                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip|Summary|Note)\b/i.test(titleLine);
+                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip|Summary|Note|Suggestions|Important|Caution|Remember|Highlights|Overview)\b/i.test(titleLine.replace(/:\s*$/, '')) ||
+                      /^\s*[A-ZČĆŠĐŽ][A-Za-z\s\dčćšđžČĆŠĐŽ,.'-]*:\s*$/.test(titleLine); // Catches Title Case followed by colon
 
     return (
       <div key={sectionIndex} className="mb-6 last:mb-0">
         {isHeading ? (
-          <h3 className="font-bold text-xl mt-3 mb-2.5 text-primary">
+          <h3 className="font-bold text-xl lg:text-2xl mt-4 mb-3 text-primary tracking-tight">
             {titleLine.replace(/:\s*$/, '')}
           </h3>
         ) : (
+          // Non-headings are less common as section starters with this split logic, but handle just in case
           <p className="text-foreground mb-1.5 leading-relaxed font-semibold">{titleLine}</p>
         )}
         
@@ -238,13 +262,28 @@ const renderJourney = (text: string) => {
           line = line.trim();
           if (line === '') return null;
 
-          let processedLine = line.replace(/\b(Budget|Transportation|Accommodation|Activities|Food|Important|Caution|Tip|Remember|Also|Additionally|Finally|Recommendation|Highlights)\b/gi, '<strong>$1</strong>');
-          processedLine = processedLine.replace(/([A-Za-z\s\dčćšđžČĆŠĐŽ]+)(\s*\(.*?\))/g, '<strong>$1</strong>$2'); 
-          processedLine = processedLine.replace(/(\b(Visit|Explore|Discover|Enjoy|Try|Experience|Check out|Head to)\s+[A-Za-z\s\dčćšđžČĆŠĐŽ]+)/g, '<strong>$1</strong>');
+          // Bolding specific keywords - expanded list
+          let processedLine = line.replace(/\b(Budget|Transportation|Accommodation|Activities|Food|Dining|Cuisine|Important|Caution|Tip|Remember|Also|Additionally|Finally|Recommendation|Highlights|Note|Option|Must-see|Consider|Duration|Cost|Entry fee|Opening hours|Getting there)\b/gi, '<strong class="text-secondary">$1</strong>');
           
+          // Bolding phrases like "Visit [Place Name]" or "Explore [Attraction]"
+          processedLine = processedLine.replace(/(\b(Visit|Explore|Discover|Enjoy|Try|Experience|Check out|Head to|Dine at|Stop by|Learn about|Participate in|Book|Reserve)\s+[A-ZČĆŠĐŽ][A-Za-z\s\dčćšđžČĆŠĐŽ,.'()/-]+)/g, '<strong>$1</strong>');
+          
+          // Bolding time references like "9:00 AM -" or "2 hours"
+          processedLine = processedLine.replace(/(\b\d{1,2}:\d{2}\s*(?:AM|PM)?\s*-?|\b\d+\s+(?:hour|hours|minute|minutes|day|days)\b)/gi, '<strong>$1</strong>');
+          
+          // Bolding currency amounts like €10-15
+          processedLine = processedLine.replace(/([€$£]\s*\d+(?:[.,]\d{1,2})?(?:\s*-\s*[€$£]?\s*\d+(?:[.,]\d{1,2})?)?)/g, '<strong>$1</strong>');
+          
+          // Handle list items (-, *, or 1.)
           if (/^(\s*-\s+|\s*\*\s+|\s*\d+\.\s+)/.test(line)) {
             return (
               <li key={lineIndex} className="text-foreground mb-1.5 ml-5 leading-relaxed list-disc" dangerouslySetInnerHTML={{ __html: processedLine.replace(/^(\s*-\s+)|(\s*\*\s+)|(\s*\d+\.\s+)/, '') }} />
+            );
+          }
+          // Handle sub-points that might just be indented text without a bullet
+          if (/^\s{2,}/.test(line) && !isHeading) { // Indented by 2 or more spaces
+             return (
+              <p key={lineIndex} className="text-foreground mb-1.5 ml-5 leading-relaxed" dangerouslySetInnerHTML={{ __html: processedLine }} />
             );
           }
           return (
@@ -267,7 +306,7 @@ export function AiPromptInterface() {
   const [dailyBudget, setDailyBudget] = useState<string>('<$50');
   const [vehicleAvailability, setVehicleAvailability] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<string>('');
-  const [detailLevel, setDetailLevel] = useState<number>(1); // Added state for detail level
+  const [detailLevel, setDetailLevel] = useState<number>(1);
 
   const [isLoading, setIsLoading] = useState(false);
   const [journey, setJourney] = useState<string | null>(null);
@@ -318,7 +357,7 @@ export function AiPromptInterface() {
       dailyBudget,
       vehicleAvailability,
       preferences,
-      detailLevel, // Added detailLevel to form data
+      detailLevel,
     };
 
     try {
@@ -339,25 +378,34 @@ export function AiPromptInterface() {
         throw new Error(`${t('errorFetching')}: ${response.status} - ${errorData}`);
       }
       
-      const responseData: { myField: string } | [{ output: string }] = await response.json();
+      // Expecting: { "myField": "[{\"output\":\"Generated journey string...\"}]" }
+      // OR { "myField": "Generated journey string..." }
+      const responseData: { myField: string } = await response.json();
+      
       let rawJourneyString: string | undefined;
 
-      if (typeof responseData === 'object' && responseData !== null && 'myField' in responseData && typeof (responseData as { myField: string }).myField === 'string') {
-        const tempField = (responseData as { myField: string }).myField;
+      if (responseData && typeof responseData.myField === 'string') {
+        // myField contains the journey string, which might itself be a JSON string
+        const tempField = responseData.myField;
         try {
-            const parsedMyField = JSON.parse(tempField);
-            if (Array.isArray(parsedMyField) && parsedMyField.length > 0 && typeof parsedMyField[0].output === 'string') {
-                rawJourneyString = parsedMyField[0].output;
-            } else if (typeof parsedMyField === 'string') { 
-                rawJourneyString = parsedMyField;
-            } else {
-                rawJourneyString = tempField; 
-            }
-        } catch (e) {
+          // Attempt to parse myField if it's a JSON string containing the actual output object/array
+          const parsedMyField = JSON.parse(tempField);
+          if (Array.isArray(parsedMyField) && parsedMyField.length > 0 && typeof parsedMyField[0].output === 'string') {
+            rawJourneyString = parsedMyField[0].output; // If myField was "[{\"output\":\"...\"}]"
+          } else if (typeof parsedMyField === 'object' && parsedMyField !== null && typeof parsedMyField.output === 'string') {
+            rawJourneyString = parsedMyField.output; // If myField was "{\"output\":\"...\"}"
+          } else if (typeof parsedMyField === 'string') {
+             rawJourneyString = parsedMyField; // If myField was a double-encoded string like "\"Actual journey...\""
+          }
+           else {
+            // If parsedMyField is not in the expected structure, but tempField was a string, use tempField directly.
+            // This handles cases where myField is just the direct journey string.
             rawJourneyString = tempField;
+          }
+        } catch (e) {
+          // If JSON.parse(tempField) fails, it means tempField is likely the direct journey string itself.
+          rawJourneyString = tempField;
         }
-      } else if (Array.isArray(responseData) && responseData.length > 0 && typeof responseData[0].output === 'string') {
-        rawJourneyString = responseData[0].output;
       }
 
 
@@ -365,7 +413,7 @@ export function AiPromptInterface() {
         setJourney(rawJourneyString);
       } else {
         console.warn("Received unexpected response structure or empty journey string:", responseData);
-        setJourney(t('noJourney')); // Or a more specific error like "Failed to parse journey"
+        setJourney(t('noJourney')); 
       }
 
     } catch (err: any) {
@@ -383,13 +431,12 @@ export function AiPromptInterface() {
     setDailyBudget('<$50');
     setVehicleAvailability(false);
     setPreferences('');
-    setDetailLevel(1); // Reset detail level
+    setDetailLevel(1);
     setJourney(null);
     setError(null);
     setIsLoading(false);
     if (formRef.current) {
         formRef.current.reset(); 
-        // Manually reset state-controlled inputs if form.reset() doesn't cover them
         setPrompt('');
         setNumberOfPeople(1);
         setArrivalDate(new Date());
@@ -416,7 +463,7 @@ export function AiPromptInterface() {
                   <div className="h-10 bg-muted rounded w-full animate-pulse"></div>
                   <div className="h-10 bg-muted rounded w-full animate-pulse"></div>
                 </div>
-                <div className="h-10 bg-muted rounded w-full animate-pulse"></div> {/* Placeholder for slider */}
+                <div className="h-10 bg-muted rounded w-full animate-pulse"></div> 
                 <div className="h-20 bg-muted rounded w-full animate-pulse"></div>
                 <div className="h-12 bg-primary/50 rounded-lg w-1/3 mx-auto animate-pulse"></div>
               </div>
@@ -446,7 +493,7 @@ export function AiPromptInterface() {
               </div>
             ) : journey ? (
               <div className="space-y-6">
-                <div className="bg-muted/30 p-4 sm:p-6 rounded-lg text-sm md:text-base font-sans prose max-w-none prose-headings:text-primary prose-strong:text-foreground">
+                <div className="bg-card p-4 sm:p-6 rounded-lg text-sm md:text-base font-sans prose max-w-none prose-headings:text-primary prose-strong:text-foreground prose-headings:font-sans prose-p:font-sans prose-li:font-sans">
                   {renderJourney(journey)}
                 </div>
                 <Button onClick={handleTryAnother} size="lg" className="rounded-lg shadow-md w-full md:w-auto mx-auto flex items-center gap-2">
@@ -560,7 +607,7 @@ export function AiPromptInterface() {
                     step={1}
                     value={[detailLevel]}
                     onValueChange={(value) => setDetailLevel(value[0])}
-                    className="py-2 rounded-lg shadow-sm"
+                    className="py-2 rounded-lg shadow-sm" // Removed shadow-sm, slider has its own styling
                     disabled={isLoading}
                   />
                   <p className="text-sm text-muted-foreground text-center pt-1">
@@ -610,3 +657,4 @@ export function AiPromptInterface() {
     </section>
   );
 }
+
