@@ -16,12 +16,12 @@ const geistSans = GeistSans;
 
 const layoutTranslations = {
   title: {
-    en: 'odmarAi - Your Personal Travel Assistant',
-    it: 'odmarAi - Il Tuo Assistente di Viaggio Personale',
-    de: 'odmarAi - Ihr Persönlicher Reiseassistent',
-    pl: 'odmarAi - Twój Osobisty Asystent Podróży',
-    fr: 'odmarAi - Votre Assistant de Voyage Personnel',
-    es: 'odmarAi - Tu Asistente de Viaje Personal',
+    en: 'odmarAI - Your Personal Travel Assistant',
+    it: 'odmarAI - Il Tuo Assistente di Viaggio Personale',
+    de: 'odmarAI - Ihr Persönlicher Reiseassistent',
+    pl: 'odmarAI - Twój Osobisty Asystent Podróży',
+    fr: 'odmarAI - Votre Assistant de Voyage Personnel',
+    es: 'odmarAI - Tu Asistente de Viaje Personal',
   },
   description: {
     en: 'Generate personalized travel journeys with AI.',
@@ -75,3 +75,4 @@ export default function RootLayout({
     </html>
   );
 }
+

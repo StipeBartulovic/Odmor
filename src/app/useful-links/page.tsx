@@ -251,10 +251,11 @@ export default function UsefulLinksPage() {
       <footer className="py-8 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} odmarAi. {t('footerRights')}
+            &copy; {currentYear} odmarAI. {t('footerRights')}
           </p>
         </div>
       </footer>
     </div>
   );
 }
+

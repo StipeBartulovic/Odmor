@@ -11,12 +11,12 @@ import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
 
 const appTitleTranslations: Record<string, string> = {
-  en: 'odmarAi',
-  it: 'odmarAi', 
-  de: 'odmarAi',
-  pl: 'odmarAi',
-  fr: 'odmarAi',
-  es: 'odmarAi',
+  en: 'odmarAI',
+  it: 'odmarAI', 
+  de: 'odmarAI',
+  pl: 'odmarAI',
+  fr: 'odmarAI',
+  es: 'odmarAI',
 };
 
 const headerLinkTranslations = {
@@ -75,12 +75,10 @@ export function AppHeader() {
             <div className="h-8 w-20 bg-muted rounded animate-pulse"></div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-8 w-24 bg-muted rounded animate-pulse md:hidden"></div>
-            <div className="h-8 w-24 bg-muted rounded animate-pulse md:hidden"></div>
-            <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:block"></div>
-            <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:block"></div>
-            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div>
-            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div>
+            <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:inline-flex"></div>
+            <div className="h-10 w-28 bg-muted rounded-md animate-pulse hidden md:inline-flex"></div>
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div> {/* LanguageSwitcher placeholder */}
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div> {/* ThemeToggleButton placeholder */}
           </div>
         </div>
       </header>
@@ -114,3 +112,4 @@ export function AppHeader() {
     </header>
   );
 }
+
