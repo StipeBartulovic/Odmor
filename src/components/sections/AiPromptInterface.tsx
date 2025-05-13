@@ -18,12 +18,12 @@ import type { ReactNode } from 'react';
 
 const translations = {
   title: {
-    en: 'Create Your Dream Itinerary',
-    it: 'Crea l\'Itinerario dei Tuoi Sogni',
-    de: 'Erstellen Sie Ihre Traumroute',
-    pl: 'Stwórz Swój Wymarzony Plan Podróży',
-    fr: 'Créez Votre Itinéraire de Rêve',
-    es: 'Crea el Itinerario de Tus Sueños',
+    en: 'Create Your Dream Journey',
+    it: 'Crea il Viaggio dei Tuoi Sogni',
+    de: 'Erstellen Sie Ihre Traumreise',
+    pl: 'Stwórz Swój Wymarzony Plan Podróży', // Journey can be "Podróż" or "Plan Podróży"
+    fr: 'Créez Votre Voyage de Rêve',
+    es: 'Crea el Viaje de Tus Sueños',
   },
   promptLabel: {
     en: 'Describe your ideal trip',
@@ -49,37 +49,37 @@ const translations = {
     fr: 'Générer',
     es: 'Generar',
   },
-  loadingItinerary: {
-    en: 'Generating Your Itinerary...',
-    it: 'Generazione del Tuo Itinerario...',
-    de: 'Deine Reiseroute wird generiert...',
+  loadingJourney: {
+    en: 'Generating Your Journey...',
+    it: 'Generazione del Tuo Viaggio...',
+    de: 'Deine Reise wird generiert...',
     pl: 'Generowanie Twojego Planu Podróży...',
-    fr: 'Génération de Votre Itinéraire...',
-    es: 'Generando Tu Itinerario...',
+    fr: 'Génération de Votre Voyage...',
+    es: 'Generando Tu Viaje...',
   },
-  itineraryTitle: {
-    en: 'Your Personalized Itinerary',
-    it: 'Il Tuo Itinerario Personalizzato',
-    de: 'Ihre Persönliche Reiseroute',
+  journeyTitle: {
+    en: 'Your Personalized Journey',
+    it: 'Il Tuo Viaggio Personalizzato',
+    de: 'Ihre Persönliche Reise',
     pl: 'Twój Spersonalizowany Plan Podróży',
-    fr: 'Votre Itinéraire Personnalisé',
-    es: 'Tu Itinerario Personalizado',
+    fr: 'Votre Voyage Personnalisé',
+    es: 'Tu Viaje Personalizado',
   },
   tryAnotherButton: {
-    en: 'Create Another Itinerary',
-    it: 'Crea un Altro Itinerario',
-    de: 'Weitere Reiseroute Erstellen',
+    en: 'Create Another Journey',
+    it: 'Crea un Altro Viaggio',
+    de: 'Weitere Reise Erstellen',
     pl: 'Stwórz Kolejny Plan Podróży',
-    fr: 'Créer un Autre Itinéraire',
-    es: 'Crear Otro Itinerario',
+    fr: 'Créer un Autre Voyage',
+    es: 'Crear Otro Viaje',
   },
-  noItinerary: {
-    en: 'No itinerary generated yet. Fill out the form and click "Generate"!',
-    it: 'Nessun itinerario generato ancora. Compila il modulo e clicca "Genera"!',
-    de: 'Noch keine Reiseroute generiert. Füllen Sie das Formular aus und klicken Sie auf "Generieren"!',
+  noJourney: {
+    en: 'No journey generated yet. Fill out the form and click "Generate"!',
+    it: 'Nessun viaggio generato ancora. Compila il modulo e clicca "Genera"!',
+    de: 'Noch keine Reise generiert. Füllen Sie das Formular aus und klicken Sie auf "Generieren"!',
     pl: 'Nie wygenerowano jeszcze planu podróży. Wypełnij formularz i kliknij "Generuj"!',
-    fr: 'Aucun itinéraire généré pour le moment. Remplissez le formulaire et cliquez sur "Générer" !',
-    es: 'Aún no se ha generado ningún itinerario. ¡Rellena el formulario y haz clic en "Generar"!',
+    fr: 'Aucun voyage généré pour le moment. Remplissez le formulaire et cliquez sur "Générer" !',
+    es: 'Aún no se ha generado ningún viaje. ¡Rellena el formulario y haz clic en "Generar"!',
   },
   numPeopleLabel: {
     en: 'Number of People',
@@ -142,12 +142,12 @@ const translations = {
     es: 'p.ej., Me encanta el senderismo, prefiero lugares tranquilos, alérgico/a a los mariscos.',
   },
   errorFetching: {
-    en: 'Error fetching itinerary',
-    it: 'Errore nel recupero dell\'itinerario',
-    de: 'Fehler beim Abrufen der Reiseroute',
+    en: 'Error fetching journey',
+    it: 'Errore nel recupero del viaggio',
+    de: 'Fehler beim Abrufen der Reise',
     pl: 'Błąd podczas pobierania planu podróży',
-    fr: 'Erreur lors de la récupération de l\'itinéraire',
-    es: 'Error al obtener el itinerario',
+    fr: 'Erreur lors de la récupération du voyage',
+    es: 'Error al obtener el viaje',
   },
    errorMinPeople: {
     en: 'Number of people must be at least 1.',
@@ -167,42 +167,54 @@ const translations = {
   },
 };
 
-const renderItinerary = (text: string) => {
+const renderJourney = (text: string) => {
   if (!text) return null;
-  // Split into blocks based on one or more empty lines (common for paragraph separation)
-  const blocks = text.split(/\n\s*\n+/);
 
-  return blocks.map((block, blockIndex) => {
-    const lines = block.trim().split('\n');
-    if (lines.length === 0 || (lines.length === 1 && lines[0].trim() === '')) return null; // Skip empty blocks
+  const sections = text.split(/\n\s*(?=[A-Za-z\s]+:)/) // Split by lines that look like "Section Title:"
+    .map(section => section.trim())
+    .filter(section => section.length > 0);
 
-    // Check first line for heading
-    const firstLine = lines[0];
-    const isFirstLineHeading = firstLine.endsWith(':') ||
-                             (firstLine.length < 70 && firstLine === firstLine.toUpperCase() && firstLine.trim() !== '' && !/^\d+\./.test(firstLine) && !firstLine.toLowerCase().includes('enjoy your') && !firstLine.toLowerCase().includes('hope you'));
+  return sections.map((section, sectionIndex) => {
+    const lines = section.split('\n');
+    const titleLine = lines[0];
+    const contentLines = lines.slice(1);
 
+    // Check if titleLine looks like a heading (ends with colon, or common keywords)
+    const isHeading = titleLine.endsWith(':') || 
+                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip)\b/i.test(titleLine);
 
     return (
-      <div key={blockIndex} className="mb-4"> {/* Paragraph block */}
-        {isFirstLineHeading ? (
-          <>
-            <h3 className="font-semibold text-lg mt-1 mb-2 text-primary">
-              {firstLine}
-            </h3>
-            {lines.slice(1).map((line, lineIndex) => (
-              <p key={lineIndex} className="text-foreground mb-1 leading-relaxed">
-                {line}
-              </p>
-            ))}
-          </>
+      <div key={sectionIndex} className="mb-6 last:mb-0">
+        {isHeading ? (
+          <h3 className="font-bold text-xl mt-3 mb-2.5 text-primary">
+            {titleLine.replace(/:\s*$/, '')} {/* Remove trailing colon for display */}
+          </h3>
         ) : (
-          // If first line is not a heading, treat all lines as part of a regular paragraph
-          lines.map((line, lineIndex) => (
-            <p key={lineIndex} className="text-foreground mb-1 leading-relaxed">
-              {line}
-            </p>
-          ))
+          <p className="text-foreground mb-1.5 leading-relaxed font-semibold">{titleLine}</p> // If not a clear heading, treat first line as emphasized paragraph
         )}
+        
+        {contentLines.map((line, lineIndex) => {
+          line = line.trim();
+          if (line === '') return null;
+
+          // Bold specific keywords
+          let processedLine = line.replace(/\b(Note|Important|Caution|Tip|Remember|Also|Additionally|Finally)\b/gi, '<strong>$1</strong>');
+          // Make locations or specific activities bold if they are followed by parenthesized details or specific instructions
+          processedLine = processedLine.replace(/([A-Za-z\s\dčćšđžČĆŠĐŽ]+)(\s*\(.*?\))/g, '<strong>$1</strong>$2'); // e.g. "Location (details)"
+          processedLine = processedLine.replace(/(\bVisit\s[A-Za-z\s\dčćšđžČĆŠĐŽ]+)/g, '<strong>$1</strong>'); 
+          processedLine = processedLine.replace(/(\bTry\s[A-Za-z\s\dčćšđžČĆŠĐŽ]+ for)/g, '<strong>$1</strong>');
+          processedLine = processedLine.replace(/(\bHead to\s[A-Za-z\s\dčćšđžČĆŠĐŽ]+)/g, '<strong>$1</strong>');
+          
+          // Simple list detection (lines starting with -, *, or number.)
+          if (/^(\s*-\s+|\s*\*\s+|\s*\d+\.\s+)/.test(line)) {
+            return (
+              <li key={lineIndex} className="text-foreground mb-1.5 ml-5 leading-relaxed list-disc" dangerouslySetInnerHTML={{ __html: processedLine.replace(/^(\s*-\s+)|(\s*\*\s+)|(\s*\d+\.\s+)/, '') }} />
+            );
+          }
+          return (
+            <p key={lineIndex} className="text-foreground mb-1.5 leading-relaxed" dangerouslySetInnerHTML={{ __html: processedLine }} />
+          );
+        })}
       </div>
     );
   });
@@ -221,7 +233,7 @@ export function AiPromptInterface() {
   const [preferences, setPreferences] = useState<string>('');
 
   const [isLoading, setIsLoading] = useState(false);
-  const [itinerary, setItinerary] = useState<string | null>(null);
+  const [journey, setJourney] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   const formRef = useRef<HTMLFormElement>(null);
@@ -237,7 +249,6 @@ export function AiPromptInterface() {
     if (typeof resolvedTranslation === 'string') {
         return resolvedTranslation;
     }
-    // Fallback if translation is missing or not a string
     return fieldKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
 
@@ -245,7 +256,7 @@ export function AiPromptInterface() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
-    setItinerary(null);
+    setJourney(null);
     setError(null);
 
     if (numberOfPeople < 1) {
@@ -282,48 +293,47 @@ export function AiPromptInterface() {
         console.error('Error response from webhook:', errorData);
         throw new Error(`${t('errorFetching')}: ${response.status} - ${errorData}`);
       }
-
-      // The n8n workflow now returns an array like: [{ "output": "itinerary string..." }]
-      // And myField should be the key holding the string "{{ $json.output }}"
-      // Which in n8n resolves to the stringified version of $json.output
-      const responseData: { myField: string } | [{ output: string }] = await response.json();
       
-      let rawItineraryString: string | undefined;
+      const responseData: { myField: string } | [{ output: string }] = await response.json();
+      let rawJourneyString: string | undefined;
 
-      if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].output) {
-        // This handles the case where n8n's final "Respond to Webhook" node
-        // is set to output: {"output": "{{ $json.somePreviousNode.output }}"}
-        // and $json.somePreviousNode.output was the actual itinerary string.
-        rawItineraryString = responseData[0].output;
-      } else if (typeof responseData === 'object' && responseData !== null && 'myField' in responseData) {
-         // This handles the case where n8n's final "Respond to Webhook" node
-         // is set to output: {"myField": "{{ JSON.stringify($json.output) }}"}
-         // or {"myField": "direct string output from a node"}
+      if (Array.isArray(responseData) && responseData.length > 0 && typeof responseData[0].output === 'string') {
+        rawJourneyString = responseData[0].output;
+      } else if (typeof responseData === 'object' && responseData !== null && 'myField' in responseData && typeof (responseData as { myField: string }).myField === 'string') {
         const tempField = (responseData as { myField: string }).myField;
+         // The N8N workflow for this user returns "{{ $json.output }}" as a string inside myField
+         // if $json.output itself was a string. If $json.output was an object/array that N8N stringified,
+         // then myField would contain a stringified JSON.
+         // Based on the example output " [{ "output": "Morning: Start..." }] "
+         // The $json.output IS the array with one object.
+         // So if n8n has `{{ $json.output }}` as the value for `myField`,
+         // `tempField` would be a string representation of that array: `"[{\"output\":\"Morning: Start...\"}]"`
         try {
-            // If myField contains a stringified JSON (e.g. from {{ JSON.stringify($json.output) }} where $json.output was an object/array)
-            // we parse it. If $json.output was an array like [{ "output": "actual_text" }], we extract "actual_text".
             const parsedMyField = JSON.parse(tempField);
-            if (Array.isArray(parsedMyField) && parsedMyField.length > 0 && parsedMyField[0].output) {
-                rawItineraryString = parsedMyField[0].output;
-            } else if (typeof parsedMyField === 'string') {
-                // If myField contained a stringified simple string.
-                rawItineraryString = parsedMyField;
+            if (Array.isArray(parsedMyField) && parsedMyField.length > 0 && typeof parsedMyField[0].output === 'string') {
+                rawJourneyString = parsedMyField[0].output;
+            } else if (typeof parsedMyField === 'string') { 
+                // This case handles if $json.output was a simple string and n8n stringified it.
+                rawJourneyString = parsedMyField;
             } else {
-                 // If myField contained a stringified object/array that doesn't match the [{output: "..."}] structure
-                rawItineraryString = tempField; // Fallback to using the content of myField as is
+                 // If myField contained something unexpected after parsing
+                rawJourneyString = tempField; // Fallback
             }
         } catch (e) {
-            // If JSON.parse(tempField) fails, it means tempField was already a plain string.
-            rawItineraryString = tempField;
+            // If JSON.parse(tempField) fails, it means tempField was already a plain string
+            // (e.g. if n8n's $json.output was directly a string and not further stringified)
+            // OR it's the literal "{{ $json.output }}" if n8n didn't process the template.
+            // Given the user's problem, the latter is unlikely if n8n is setup correctly.
+            // The goal is to extract the actual journey text.
+            rawJourneyString = tempField;
         }
       }
 
 
-      if (rawItineraryString) {
-        setItinerary(rawItineraryString);
+      if (rawJourneyString) {
+        setJourney(rawJourneyString);
       } else {
-        setItinerary(t('noItinerary'));
+        setJourney(t('noJourney'));
       }
 
     } catch (err: any) {
@@ -341,7 +351,7 @@ export function AiPromptInterface() {
     setDailyBudget('<$50');
     setVehicleAvailability(false);
     setPreferences('');
-    setItinerary(null);
+    setJourney(null);
     setError(null);
     setIsLoading(false);
     if (formRef.current) {
@@ -383,19 +393,19 @@ export function AiPromptInterface() {
           <CardHeader className="bg-muted/50 p-6">
             <CardTitle className="text-2xl md:text-3xl font-semibold text-primary flex items-center gap-3">
               <Wand2 className="h-8 w-8" />
-              {isLoading ? t('loadingItinerary') : itinerary ? t('itineraryTitle') : t('title')}
+              {isLoading ? t('loadingJourney') : journey ? t('journeyTitle') : t('title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 md:p-8">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary mb-6" />
-                <p className="text-xl text-muted-foreground">{t('loadingItinerary')}</p>
+                <p className="text-xl text-muted-foreground">{t('loadingJourney')}</p>
               </div>
-            ) : itinerary ? (
+            ) : journey ? (
               <div className="space-y-6">
-                <div className="bg-muted/30 p-4 rounded-lg text-sm md:text-base font-sans">
-                  {renderItinerary(itinerary)}
+                <div className="bg-muted/30 p-4 sm:p-6 rounded-lg text-sm md:text-base font-sans prose max-w-none prose-headings:text-primary prose-strong:text-foreground">
+                  {renderJourney(journey)}
                 </div>
                 <Button onClick={handleTryAnother} size="lg" className="rounded-lg shadow-md w-full md:w-auto mx-auto flex items-center gap-2">
                   <RotateCcw className="h-5 w-5" />

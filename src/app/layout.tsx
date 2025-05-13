@@ -23,12 +23,12 @@ const layoutTranslations = {
     es: 'Stibar - Tu Asistente de Viaje Personal',
   },
   description: {
-    en: 'Generate personalized travel itineraries with AI.',
-    it: 'Genera itinerari di viaggio personalizzati con l\'IA.',
-    de: 'Erstellen Sie personalisierte Reiserouten mit KI.',
+    en: 'Generate personalized travel journeys with AI.',
+    it: 'Genera viaggi personalizzati con l\'IA.',
+    de: 'Erstellen Sie personalisierte Reisen mit KI.',
     pl: 'Generuj spersonalizowane plany podróży za pomocą AI.',
-    fr: 'Générez des itinéraires de voyage personnalisés avec l\'IA.',
-    es: 'Genera itinerarios de viaje personalizados con IA.',
+    fr: 'Générez des voyages personnalisés avec l\'IA.',
+    es: 'Genera viajes personalizados con IA.',
   }
 };
 
