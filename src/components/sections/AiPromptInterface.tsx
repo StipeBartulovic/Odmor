@@ -1,3 +1,4 @@
+// src/components/sections/AiPromptInterface.tsx
 'use client';
 
 import type { FormEvent } from 'react';
@@ -10,8 +11,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider"; // Added Slider import
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather } from 'lucide-react';
+import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather, ListChecks } from 'lucide-react';
 import { format } from "date-fns";
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
@@ -21,7 +23,7 @@ const translations = {
     en: 'Create Your Dream Journey',
     it: 'Crea il Viaggio dei Tuoi Sogni',
     de: 'Erstellen Sie Ihre Traumreise',
-    pl: 'Stwórz Swój Wymarzony Plan Podróży', // Journey can be "Podróż" or "Plan Podróży"
+    pl: 'Stwórz Swój Wymarzony Plan Podróży',
     fr: 'Créez Votre Voyage de Rêve',
     es: 'Crea el Viaje de Tus Sueños',
   },
@@ -141,6 +143,46 @@ const translations = {
     fr: 'ex., J\'adore la randonnée, préfère les endroits calmes, allergique aux fruits de mer.',
     es: 'p.ej., Me encanta el senderismo, prefiero lugares tranquilos, alérgico/a a los mariscos.',
   },
+  detailLevelLabel: {
+    en: 'Journey Detail Level',
+    it: 'Livello Dettaglio Viaggio',
+    de: 'Detailgrad der Reise',
+    pl: 'Poziom Szczegółowości Planu',
+    fr: 'Niveau de Détail du Voyage',
+    es: 'Nivel de Detalle del Viaje',
+  },
+  detailLevelOption0: {
+    en: 'Light Outline: Minimal guidance, lots of room for spontaneity.',
+    it: 'Bozza Leggera: Guida minima, molto spazio per la spontaneità.',
+    de: 'Grobe Skizze: Minimale Führung, viel Raum für Spontanität.',
+    pl: 'Ogólny Zarys: Minimalne wskazówki, dużo miejsca na spontaniczność.',
+    fr: 'Aperçu Léger: Guidage minimal, beaucoup de place pour la spontanéité.',
+    es: 'Esquema Ligero: Orientación mínima, mucho espacio para la espontaneidad.',
+  },
+  detailLevelOption1: {
+    en: 'Balanced Guide: Key activities with structure and free time.',
+    it: 'Guida Bilanciata: Attività chiave con struttura e tempo libero.',
+    de: 'Ausgewogener Leitfaden: Wichtige Aktivitäten mit Struktur und Freizeit.',
+    pl: 'Zrównoważony Przewodnik: Kluczowe aktywności ze strukturą i czasem wolnym.',
+    fr: 'Guide Équilibré: Activités clés avec structure et temps libre.',
+    es: 'Guía Equilibrada: Actividades clave con estructura y tiempo libre.',
+  },
+  detailLevelOption2: {
+    en: 'Detailed Plan: Structured day with specific activities and timings.',
+    it: 'Piano Dettagliato: Giornata strutturata con attività e orari specifici.',
+    de: 'Detaillierter Plan: Strukturierter Tag mit spezifischen Aktivitäten und Zeitplänen.',
+    pl: 'Szczegółowy Plan: Ustrukturyzowany dzień z konkretnymi aktywnościami i godzinami.',
+    fr: 'Plan Détaillé: Journée structurée avec activités et horaires spécifiques.',
+    es: 'Plan Detallado: Día estructurado con actividades y horarios específicos.',
+  },
+  detailLevelOption3: {
+    en: 'Full Immersion: Hour-by-hour plan for a packed, guided experience.',
+    it: 'Immersione Completa: Piano ora per ora per un\'esperienza guidata e intensa.',
+    de: 'Volles Eintauchen: Stundenplan für ein vollgepacktes, geführtes Erlebnis.',
+    pl: 'Pełne Zanurzenie: Plan godzina po godzinie dla intensywnego, prowadzonego doświadczenia.',
+    fr: 'Immersion Complète: Plan heure par heure pour une expérience guidée et dense.',
+    es: 'Inmersión Total: Plan hora por hora para una experiencia guiada y completa.',
+  },
   errorFetching: {
     en: 'Error fetching journey',
     it: 'Errore nel recupero del viaggio',
@@ -170,7 +212,7 @@ const translations = {
 const renderJourney = (text: string) => {
   if (!text) return null;
 
-  const sections = text.split(/\n\s*(?=[A-Za-z\s]+:)/) // Split by lines that look like "Section Title:"
+  const sections = text.split(/\n\s*(?=[A-Za-z\s]+:)/) 
     .map(section => section.trim())
     .filter(section => section.length > 0);
 
@@ -179,33 +221,27 @@ const renderJourney = (text: string) => {
     const titleLine = lines[0];
     const contentLines = lines.slice(1);
 
-    // Check if titleLine looks like a heading (ends with colon, or common keywords)
     const isHeading = titleLine.endsWith(':') || 
-                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip)\b/i.test(titleLine);
+                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip|Summary|Note)\b/i.test(titleLine);
 
     return (
       <div key={sectionIndex} className="mb-6 last:mb-0">
         {isHeading ? (
           <h3 className="font-bold text-xl mt-3 mb-2.5 text-primary">
-            {titleLine.replace(/:\s*$/, '')} {/* Remove trailing colon for display */}
+            {titleLine.replace(/:\s*$/, '')}
           </h3>
         ) : (
-          <p className="text-foreground mb-1.5 leading-relaxed font-semibold">{titleLine}</p> // If not a clear heading, treat first line as emphasized paragraph
+          <p className="text-foreground mb-1.5 leading-relaxed font-semibold">{titleLine}</p>
         )}
         
         {contentLines.map((line, lineIndex) => {
           line = line.trim();
           if (line === '') return null;
 
-          // Bold specific keywords
-          let processedLine = line.replace(/\b(Note|Important|Caution|Tip|Remember|Also|Additionally|Finally)\b/gi, '<strong>$1</strong>');
-          // Make locations or specific activities bold if they are followed by parenthesized details or specific instructions
-          processedLine = processedLine.replace(/([A-Za-z\s\dčćšđžČĆŠĐŽ]+)(\s*\(.*?\))/g, '<strong>$1</strong>$2'); // e.g. "Location (details)"
-          processedLine = processedLine.replace(/(\bVisit\s[A-Za-z\s\dčćšđžČĆŠĐŽ]+)/g, '<strong>$1</strong>'); 
-          processedLine = processedLine.replace(/(\bTry\s[A-Za-z\s\dčćšđžČĆŠĐŽ]+ for)/g, '<strong>$1</strong>');
-          processedLine = processedLine.replace(/(\bHead to\s[A-Za-z\s\dčćšđžČĆŠĐŽ]+)/g, '<strong>$1</strong>');
+          let processedLine = line.replace(/\b(Budget|Transportation|Accommodation|Activities|Food|Important|Caution|Tip|Remember|Also|Additionally|Finally|Recommendation|Highlights)\b/gi, '<strong>$1</strong>');
+          processedLine = processedLine.replace(/([A-Za-z\s\dčćšđžČĆŠĐŽ]+)(\s*\(.*?\))/g, '<strong>$1</strong>$2'); 
+          processedLine = processedLine.replace(/(\b(Visit|Explore|Discover|Enjoy|Try|Experience|Check out|Head to)\s+[A-Za-z\s\dčćšđžČĆŠĐŽ]+)/g, '<strong>$1</strong>');
           
-          // Simple list detection (lines starting with -, *, or number.)
           if (/^(\s*-\s+|\s*\*\s+|\s*\d+\.\s+)/.test(line)) {
             return (
               <li key={lineIndex} className="text-foreground mb-1.5 ml-5 leading-relaxed list-disc" dangerouslySetInnerHTML={{ __html: processedLine.replace(/^(\s*-\s+)|(\s*\*\s+)|(\s*\d+\.\s+)/, '') }} />
@@ -231,6 +267,7 @@ export function AiPromptInterface() {
   const [dailyBudget, setDailyBudget] = useState<string>('<$50');
   const [vehicleAvailability, setVehicleAvailability] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<string>('');
+  const [detailLevel, setDetailLevel] = useState<number>(1); // Added state for detail level
 
   const [isLoading, setIsLoading] = useState(false);
   const [journey, setJourney] = useState<string | null>(null);
@@ -250,6 +287,13 @@ export function AiPromptInterface() {
         return resolvedTranslation;
     }
     return fieldKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  };
+
+  const getDetailLevelDescription = (level: number): string => {
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    const key = `detailLevelOption${level}` as keyof typeof translations;
+    // @ts-ignore
+    return translations[key]?.[langToUse] || translations[key]?.['en'] || '';
   };
 
 
@@ -274,6 +318,7 @@ export function AiPromptInterface() {
       dailyBudget,
       vehicleAvailability,
       preferences,
+      detailLevel, // Added detailLevel to form data
     };
 
     try {
@@ -297,43 +342,30 @@ export function AiPromptInterface() {
       const responseData: { myField: string } | [{ output: string }] = await response.json();
       let rawJourneyString: string | undefined;
 
-      if (Array.isArray(responseData) && responseData.length > 0 && typeof responseData[0].output === 'string') {
-        rawJourneyString = responseData[0].output;
-      } else if (typeof responseData === 'object' && responseData !== null && 'myField' in responseData && typeof (responseData as { myField: string }).myField === 'string') {
+      if (typeof responseData === 'object' && responseData !== null && 'myField' in responseData && typeof (responseData as { myField: string }).myField === 'string') {
         const tempField = (responseData as { myField: string }).myField;
-         // The N8N workflow for this user returns "{{ $json.output }}" as a string inside myField
-         // if $json.output itself was a string. If $json.output was an object/array that N8N stringified,
-         // then myField would contain a stringified JSON.
-         // Based on the example output " [{ "output": "Morning: Start..." }] "
-         // The $json.output IS the array with one object.
-         // So if n8n has `{{ $json.output }}` as the value for `myField`,
-         // `tempField` would be a string representation of that array: `"[{\"output\":\"Morning: Start...\"}]"`
         try {
             const parsedMyField = JSON.parse(tempField);
             if (Array.isArray(parsedMyField) && parsedMyField.length > 0 && typeof parsedMyField[0].output === 'string') {
                 rawJourneyString = parsedMyField[0].output;
             } else if (typeof parsedMyField === 'string') { 
-                // This case handles if $json.output was a simple string and n8n stringified it.
                 rawJourneyString = parsedMyField;
             } else {
-                 // If myField contained something unexpected after parsing
-                rawJourneyString = tempField; // Fallback
+                rawJourneyString = tempField; 
             }
         } catch (e) {
-            // If JSON.parse(tempField) fails, it means tempField was already a plain string
-            // (e.g. if n8n's $json.output was directly a string and not further stringified)
-            // OR it's the literal "{{ $json.output }}" if n8n didn't process the template.
-            // Given the user's problem, the latter is unlikely if n8n is setup correctly.
-            // The goal is to extract the actual journey text.
             rawJourneyString = tempField;
         }
+      } else if (Array.isArray(responseData) && responseData.length > 0 && typeof responseData[0].output === 'string') {
+        rawJourneyString = responseData[0].output;
       }
 
 
       if (rawJourneyString) {
         setJourney(rawJourneyString);
       } else {
-        setJourney(t('noJourney'));
+        console.warn("Received unexpected response structure or empty journey string:", responseData);
+        setJourney(t('noJourney')); // Or a more specific error like "Failed to parse journey"
       }
 
     } catch (err: any) {
@@ -351,11 +383,20 @@ export function AiPromptInterface() {
     setDailyBudget('<$50');
     setVehicleAvailability(false);
     setPreferences('');
+    setDetailLevel(1); // Reset detail level
     setJourney(null);
     setError(null);
     setIsLoading(false);
     if (formRef.current) {
         formRef.current.reset(); 
+        // Manually reset state-controlled inputs if form.reset() doesn't cover them
+        setPrompt('');
+        setNumberOfPeople(1);
+        setArrivalDate(new Date());
+        setDailyBudget('<$50');
+        setVehicleAvailability(false);
+        setPreferences('');
+        setDetailLevel(1);
     }
   };
   
@@ -375,6 +416,7 @@ export function AiPromptInterface() {
                   <div className="h-10 bg-muted rounded w-full animate-pulse"></div>
                   <div className="h-10 bg-muted rounded w-full animate-pulse"></div>
                 </div>
+                <div className="h-10 bg-muted rounded w-full animate-pulse"></div> {/* Placeholder for slider */}
                 <div className="h-20 bg-muted rounded w-full animate-pulse"></div>
                 <div className="h-12 bg-primary/50 rounded-lg w-1/3 mx-auto animate-pulse"></div>
               </div>
@@ -477,7 +519,7 @@ export function AiPromptInterface() {
                           selected={arrivalDate}
                           onSelect={setArrivalDate}
                           initialFocus
-                          disabled={isLoading}
+                          disabled={isLoading || !isMounted}
                         />
                       </PopoverContent>
                     </Popover>
@@ -506,6 +548,26 @@ export function AiPromptInterface() {
                   </div>
                 </div>
                 
+                <div className="space-y-2">
+                  <Label htmlFor="detail-level" className="flex items-center gap-2 text-foreground">
+                    <ListChecks className="h-5 w-5 text-primary" />
+                    {t('detailLevelLabel')}
+                  </Label>
+                  <Slider
+                    id="detail-level"
+                    min={0}
+                    max={3}
+                    step={1}
+                    value={[detailLevel]}
+                    onValueChange={(value) => setDetailLevel(value[0])}
+                    className="py-2 rounded-lg shadow-sm"
+                    disabled={isLoading}
+                  />
+                  <p className="text-sm text-muted-foreground text-center pt-1">
+                    {getDetailLevelDescription(detailLevel)}
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     <div className="space-y-2">
                         <Label htmlFor="preferences" className="flex items-center gap-2 text-foreground">
@@ -521,7 +583,7 @@ export function AiPromptInterface() {
                         disabled={isLoading}
                         />
                     </div>
-                    <div className="space-y-3 pt-2 md:pt-8"> {/* Adjusted padding for alignment */}
+                    <div className="space-y-3 pt-2 md:pt-8"> 
                         <div className="flex items-center space-x-3">
                             <Switch
                                 id="vehicle-availability"

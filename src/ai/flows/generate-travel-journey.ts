@@ -18,11 +18,12 @@ const GenerateTravelJourneyInputSchema = z.object({
   dailyBudget: z.string().describe('The daily budget for the trip (select range or enter approximate average).'),
   vehicleAvailability: z.boolean().describe('Whether a vehicle is available for the trip.'),
   preferences: z.string().describe('The likes and dislikes of the travel party.'),
+  detailLevel: z.number().describe('The desired level of detail for the journey (0: Light Outline, 1: Balanced Guide, 2: Detailed Itinerary, 3: Full Immersion).'),
 });
 export type GenerateTravelJourneyInput = z.infer<typeof GenerateTravelJourneyInputSchema>;
 
 const GenerateTravelJourneyOutputSchema = z.object({
-  journey: z.string().describe('A personalized travel journey with destinations, travel times, cost estimates, and dining options.'),
+  journey: z.string().describe('A personalized travel journey with destinations, travel times, cost estimates, and dining options, tailored to the specified detail level.'),
 });
 export type GenerateTravelJourneyOutput = z.infer<typeof GenerateTravelJourneyOutputSchema>;
 
@@ -34,7 +35,19 @@ const prompt = ai.definePrompt({
   name: 'generateTravelJourneyPrompt',
   input: {schema: GenerateTravelJourneyInputSchema},
   output: {schema: GenerateTravelJourneyOutputSchema},
-  prompt: `You are an expert travel agent specializing in creating personalized travel journeys.\n\nYou will use the following information to generate a travel journey tailored to the user's needs and preferences.\n\nPrompt: {{{prompt}}}\nNumber of People: {{{numberOfPeople}}}\nArrival Date: {{{arrivalDate}}}\nDaily Budget: {{{dailyBudget}}}\nVehicle Availability: {{{vehicleAvailability}}}\nPreferences: {{{preferences}}}\n\nGenerate a detailed travel journey with destinations, travel times, cost estimates, and dining options.`,  
+  prompt: `You are an expert travel agent specializing in creating personalized travel journeys.
+
+You will use the following information to generate a travel journey tailored to the user's needs and preferences.
+
+Prompt: {{{prompt}}}
+Number of People: {{{numberOfPeople}}}
+Arrival Date: {{{arrivalDate}}}
+Daily Budget: {{{dailyBudget}}}
+Vehicle Availability: {{{vehicleAvailability}}}
+Preferences: {{{preferences}}}
+Journey Detail Level: {{{detailLevel}}} (Interpret 0 as a Light Outline with minimal guidance, 1 as a Balanced Guide with key activities and suggestions, 2 as a Detailed Itinerary with more structure, and 3 as a Full Immersion plan with hourly specifics for a packed day. Adjust the verbosity and specificity of the generated plan accordingly.)
+
+Generate a detailed travel journey with destinations, travel times, cost estimates, and dining options. Ensure the output is a single string that can be directly displayed.`,  
 });
 
 const generateTravelJourneyFlow = ai.defineFlow(
@@ -45,12 +58,6 @@ const generateTravelJourneyFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    // Assuming the output structure matches the schema, and 'journey' is the key.
-    // If prompt output is directly the string, this might need adjustment.
-    // For now, let's assume the prompt returns an object with a 'journey' field.
-    // However, based on existing code, the prompt likely directly returns an object that fits GenerateTravelJourneyOutputSchema.
-    // So, if prompt's output IS { journey: "..." }, then output!.journey is not needed, output! is fine.
-    // The prompt definition output schema IS GenerateTravelJourneyOutputSchema, so output! should be { journey: "string" }.
     return output!; 
   }
 );
