@@ -179,7 +179,7 @@ export default function UsefulLinksPage() {
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
         <div className="mb-8">
-          <Button variant="outline" onClick={() => router.back()} className="rounded-lg shadow-sm">
+          <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
             <ArrowLeft className="mr-2 h-5 w-5" />
             {t('goBackButton')}
           </Button>
@@ -258,4 +258,3 @@ export default function UsefulLinksPage() {
     </div>
   );
 }
-

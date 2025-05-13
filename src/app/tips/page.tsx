@@ -150,10 +150,10 @@ const pageTranslations = {
     es: 'Cargando consejos...',
   },
   previousFact: {
-    en: 'Previous', it: 'Precedente', de: 'Vorherige', pl: 'Poprzedni', fr: 'Précédent', es: 'Anterior'
+    en: 'Previous Fact', it: 'Fatto Precedente', de: 'Vorheriger Fakt', pl: 'Poprzedni Fakt', fr: 'Fait Précédent', es: 'Hecho Anterior'
   },
   nextFact: {
-    en: 'Next', it: 'Successivo', de: 'Nächste', pl: 'Następny', fr: 'Suivant', es: 'Siguiente'
+    en: 'Next Fact', it: 'Fatto Successivo', de: 'Nächster Fakt', pl: 'Następny Fakt', fr: 'Fait Suivant', es: 'Hecho Siguiente'
   }
 };
 
@@ -251,7 +251,7 @@ export default function TipsPage() {
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
         <div className="mb-8">
-          <Button variant="outline" onClick={() => router.back()} className="rounded-lg shadow-sm">
+          <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
             <ArrowLeft className="mr-2 h-5 w-5" />
             {t('goBackButton') as string}
           </Button>
@@ -320,19 +320,33 @@ export default function TipsPage() {
           </CardHeader>
           <CardContent className="p-4 md:p-6 text-muted-foreground space-y-3">
             <div className="relative">
-              <p className="text-base text-center min-h-[60px] flex items-center justify-center">
+              <p className="text-base text-center min-h-[60px] flex items-center justify-center px-8"> {/* Added px-8 for spacing */}
                 {localizedDidYouKnowContent[currentFactIndex]}
               </p>
-              <div className="flex justify-between items-center mt-4">
-                <Button variant="outline" size="sm" onClick={prevFact} className="rounded-lg shadow-sm">
-                  <ChevronLeft className="h-4 w-4 mr-1" /> {t('previousFact') as string}
-                </Button>
+              <div className="flex justify-between items-center mt-4 w-full">
+                <div
+                  onClick={prevFact}
+                  className="p-1.5 rounded-full cursor-pointer hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-in-out transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') prevFact(); }}
+                  aria-label={t('previousFact') as string}
+                >
+                  <ChevronLeft className="h-5 w-5 text-primary" />
+                </div>
                 <span className="text-sm text-muted-foreground">
                   {currentFactIndex + 1} / {localizedDidYouKnowContent.length}
                 </span>
-                <Button variant="outline" size="sm" onClick={nextFact} className="rounded-lg shadow-sm">
-                  {t('nextFact') as string} <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+                <div
+                  onClick={nextFact}
+                  className="p-1.5 rounded-full cursor-pointer hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-in-out transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') nextFact(); }}
+                  aria-label={t('nextFact') as string}
+                >
+                  <ChevronRight className="h-5 w-5 text-primary" />
+                </div>
               </div>
             </div>
             <p className="text-xs italic mt-6 pt-3 border-t border-muted/20">{t('moreTipsFooter') as string}</p>
@@ -350,4 +364,3 @@ export default function TipsPage() {
     </div>
   );
 }
-
