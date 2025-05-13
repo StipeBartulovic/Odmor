@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { ActivityCard } from '@/components/shared/ActivityCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Mountain, Waves, Trees, Building, Ticket, Zap, VenetianMask, Loader2, Landmark } from 'lucide-react';
+import { Mountain, Waves, Trees, Building, Ticket, Zap, VenetianMask, Loader2, Landmark, Ship } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 
@@ -70,10 +70,10 @@ const getActivityIcon = (activityName: string): React.ElementType => {
   }
   if (lowerName.includes('beach') || lowerName.includes('coastal')) return Waves;
   if (lowerName.includes('marjan') || lowerName.includes('park') || lowerName.includes('mountain') || lowerName.includes('viewpoint')) return Mountain;
-  if (lowerName.includes('museum') || lowerName.includes('national park')) return Building; // national park was here
+  if (lowerName.includes('museum') || lowerName.includes('national park')) return Building; 
   if (lowerName.includes('rafting') || lowerName.includes('kayaking') || lowerName.includes('quad') || lowerName.includes('zipline')) return Zap;
-  if (lowerName.includes('tour') || lowerName.includes('nightlife') || lowerName.includes('playroom')) return VenetianMask;
-  if (lowerName.includes('old town') || lowerName.includes('historic')) return Landmark;
+  if (lowerName.includes('tour') || lowerName.includes('nightlife') || lowerName.includes('playroom') || lowerName.includes('boat trip')) return Ship;
+  if (lowerName.includes('old town') || lowerName.includes('historic') || lowerName.includes('nearby towns')) return Landmark;
   return Ticket; 
 };
 
@@ -87,29 +87,11 @@ export function ActivitiesSection() {
     setIsMounted(true);
     async function loadActivities() {
       const fetchedActivities = await getActivities();
-      const demoActivities: Activity[] = [
-        { 
-          name: "Old Town Exploration", 
-          description: "Discover the historic alleys and significant landmarks of Split's ancient core.", 
-          iconUrl: "https://picsum.photos/300/200?random=oldcity", 
-          isFree: true, 
-          dataAiHint: "old city", 
-          subActivities: [
-            { name: "Diocletian's Palace Self-Guided Tour", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Diocletian's+Palace+Split+Croatia" },
-            { name: "Stroll along Riva Promenade", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Riva+Promenade+Split+Croatia" },
-            { name: "Visit Pjaca (People's Square)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Pjaca+Split+Croatia" }
-          ]
-        },
-        { 
-          name: "Zipline Adventure Over Canyon", 
-          description: "Experience an adrenaline rush soaring over a canyon on a zipline.", 
-          iconUrl: "https://picsum.photos/300/200?random=ziplinecanyon", 
-          isFree: false, 
-          dataAiHint: "zipline canyon" 
-        },
-      ];
-      const combinedActivities = [...fetchedActivities, ...demoActivities];
-      const uniqueActivities = Array.from(new Map(combinedActivities.map(activity => [activity.name, activity])).values());
+      // Demo activities are now primarily in getActivities service, ensure they are not duplicated if that service is live
+      // const demoActivities: Activity[] = []; 
+      // If getActivities is just mock data, then it already contains the examples.
+      // If getActivities fetches live data, then you might want to add static demos here as fallback or addition.
+      const uniqueActivities = Array.from(new Map(fetchedActivities.map(activity => [activity.name, activity])).values());
       setActivities(uniqueActivities);
     }
     loadActivities();

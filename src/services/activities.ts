@@ -109,6 +109,18 @@ export async function getActivities(): Promise<Activity[]> {
       ]
     },
     {
+      name: 'Exploring Nearby Towns',
+      description: "Visit charming nearby towns and villages, easily accessible for a day trip from Split.",
+      iconUrl: 'https://picsum.photos/300/200?random=oldtowns',
+      isFree: true,
+      dataAiHint: 'small town',
+      subActivities: [
+        { name: "Trogir (UNESCO World Heritage Site)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Trogir+Croatia" },
+        { name: "Omiš (Historic town at Cetina river mouth)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Omiš+Croatia" },
+        { name: "Solin (Ancient Salona ruins)", googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Solin+Salona+Croatia" }
+      ]
+    },
+    {
       name: 'Example Museum Visit',
       description: 'A visit to a local museum to explore art or history.',
       iconUrl: 'https://picsum.photos/300/200?random=museumvisit',
@@ -146,6 +158,15 @@ export async function getActivities(): Promise<Activity[]> {
           ]
         }
       ]
+    },
+    {
+      name: 'Island Boat Trip',
+      description: "Discover nearby islands with a scenic boat tour, including swimming and snorkeling opportunities.",
+      iconUrl: 'https://picsum.photos/300/200?random=boattrip',
+      isFree: false,
+      dataAiHint: 'boat island',
+      // Potential for subActivityCategories with links to specific tour operators
     }
   ];
 }
+
