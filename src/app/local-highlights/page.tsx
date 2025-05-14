@@ -1,7 +1,7 @@
 // src/app/local-highlights/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { HighlightCard } from '@/components/shared/HighlightCard';
 import type { LocalHighlight } from '@/services/localHighlights';
@@ -62,7 +62,6 @@ const pageTranslations = {
   },
 };
 
-// Updated fallback data with TikTok videos only
 const fallbackHighlights: LocalHighlight[] = [
   {
     id: 'fallback-tiktok-1',
@@ -107,6 +106,10 @@ export default function LocalHighlightsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [observedVideoId, setObservedVideoId] = useState<string | null>(null);
+  
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const videoRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     setIsMounted(true);
@@ -131,6 +134,44 @@ export default function LocalHighlightsPage() {
     fetchHighlights();
   }, []);
 
+  const handleIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        setObservedVideoId(entry.target.id);
+        // Attempt to play video - NOTE: This may not work due to iframe cross-origin restrictions
+        const videoElement = entry.target.querySelector('iframe');
+        videoElement?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      } else {
+        // Attempt to pause video
+        const videoElement = entry.target.querySelector('iframe');
+        videoElement?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (highlights.length > 0 && typeof window !== 'undefined') {
+      observerRef.current = new IntersectionObserver(handleIntersection, {
+        root: null, // viewport
+        rootMargin: '0px',
+        threshold: 0.75, // 75% of the video is visible
+      });
+
+      videoRefs.current.forEach(videoEl => {
+        if (videoEl && observerRef.current) {
+          observerRef.current.observe(videoEl);
+        }
+      });
+
+      return () => {
+        if (observerRef.current) {
+          observerRef.current.disconnect();
+        }
+        videoRefs.current.clear();
+      };
+    }
+  }, [highlights, handleIntersection]);
+
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
     // @ts-ignore
@@ -147,47 +188,52 @@ export default function LocalHighlightsPage() {
     );
   }
 
-
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background"> {/* Changed min-h-screen to h-screen for full height */}
       <AppHeader />
-      <main className="flex-grow container mx-auto px-2 py-8 sm:px-4">
-        <div className="mb-8">
-          <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            {t('goBackButton')}
-          </Button>
+      {/* Main content area for scrollable videos. Header and Footer are outside this scrollable area. */}
+      <main className="flex-1 overflow-y-auto snap-y snap-mandatory"> {/* flex-1 to take remaining space, overflow-y-auto for scrolling */}
+        {/* This div acts as the scroll container for video sections */}
+        <div className="relative"> 
+          {isLoading ? (
+            <section className="h-screen flex flex-col items-center justify-center snap-start"> {/* Each section is full height */}
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
+            </section>
+          ) : highlights.length > 0 ? (
+            highlights.map((highlight) => (
+              <section 
+                key={highlight.id}
+                id={highlight.id}
+                ref={el => el ? videoRefs.current.set(highlight.id, el) : videoRefs.current.delete(highlight.id)}
+                className="h-screen w-full flex items-center justify-center snap-start relative" /* Full viewport height and snap */
+              >
+                <HighlightCard 
+                  highlight={highlight} 
+                  isObserved={observedVideoId === highlight.id} 
+                />
+              </section>
+            ))
+          ) : (
+            <section className="h-screen flex flex-col items-center justify-center text-center snap-start p-4">
+              <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
+              <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
+            </section>
+          )}
         </div>
-        <header className="text-center mb-8 md:mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary">{t('title')}</h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">{t('subtitle')}</p>
-        </header>
-
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-10">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
-          </div>
-        ) : highlights.length > 0 ? (
-          <div className="grid grid-cols-1 gap-8 md:gap-10"> {/* Increased gap slightly */}
-            {highlights.map((highlight) => (
-              <HighlightCard key={highlight.id} highlight={highlight} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
-          </div>
-        )}
       </main>
-      <footer className="py-8 bg-muted text-center mt-12">
+      {/* Footer is not part of the scrollable video area if we want full-screen videos taking all main space */}
+      {/* If footer should be visible, it needs to be outside the flex-1 main or the main needs fixed height */}
+      {/* For true TikTok style, footer might be overlaid or not present */}
+      {/* 
+      <footer className="py-4 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
             &copy; {currentYear} odmarAI. {t('footerRights')}
           </p>
         </div>
-      </footer>
+      </footer> 
+      */}
     </div>
   );
 }
