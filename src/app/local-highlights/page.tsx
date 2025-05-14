@@ -62,25 +62,12 @@ const pageTranslations = {
   },
 };
 
-// Updated fallback data with known working examples
+// Updated fallback data with TikTok videos only
 const fallbackHighlights: LocalHighlight[] = [
-  {
-    id: 'fallback-insta-1',
-    title: 'Beautiful Croatian Coastline',
-    platform: 'Instagram',
-    // Example of a public, embeddable Instagram post
-    embedUrl: 'https://www.instagram.com/p/C9Z6Xq8IGXh/embed/', 
-    externalUrl: 'https://www.instagram.com/p/C9Z6Xq8IGXh/',
-    username: 'croatiafulloflife',
-    description: 'Discover the stunning Adriatic coast. #CroatiaFullOfLife',
-    location: 'Adriatic Sea, Croatia',
-    category: 'scenery',
-  },
   {
     id: 'fallback-tiktok-1',
     title: 'Adventures in Croatia by @cosinessandadventures',
     platform: 'TikTok',
-    // Using one of the user's provided URLs that is embeddable
     embedUrl: 'https://www.tiktok.com/embed/v2/7388936115308268833', 
     externalUrl: 'https://www.tiktok.com/@cosinessandadventures/video/7388936115308268833',
     username: 'cosinessandadventures',
@@ -92,7 +79,6 @@ const fallbackHighlights: LocalHighlight[] = [
     id: 'fallback-tiktok-2',
     title: 'Travel Moments by @emigrantochka',
     platform: 'TikTok',
-    // Using another of the user's provided URLs that is embeddable
     embedUrl: 'https://www.tiktok.com/embed/v2/7411791667910511905', 
     externalUrl: 'https://www.tiktok.com/@emigrantochka/video/7411791667910511905',
     username: 'emigrantochka',
@@ -100,6 +86,17 @@ const fallbackHighlights: LocalHighlight[] = [
     category: 'travel',
     location: 'Various Locations',
   },
+  {
+    id: 'fallback-tiktok-3',
+    title: 'Croatian Scenery by @msurinaa',
+    platform: 'TikTok',
+    embedUrl: 'https://www.tiktok.com/embed/v2/7499780431143914774', 
+    externalUrl: 'https://www.tiktok.com/@msurinaa/video/7499780431143914774',
+    username: 'msurinaa',
+    description: 'Beautiful views from Croatia.',
+    category: 'scenery',
+    location: 'Croatia',
+  }
 ];
 
 
@@ -122,7 +119,6 @@ export default function LocalHighlightsPage() {
         if (fetchedHighlights && fetchedHighlights.length > 0) {
           setHighlights(fetchedHighlights);
         } else {
-          // Use fallback data if Firebase returns empty or there's an issue
           console.log("Using fallback highlights as Firebase returned empty or there was an issue fetching.");
           setHighlights(fallbackHighlights);
         }
@@ -173,7 +169,7 @@ export default function LocalHighlightsPage() {
             <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
           </div>
         ) : highlights.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 gap-8 md:gap-10"> {/* Increased gap slightly */}
             {highlights.map((highlight) => (
               <HighlightCard key={highlight.id} highlight={highlight} />
             ))}

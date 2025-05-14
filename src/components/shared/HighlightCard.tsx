@@ -5,7 +5,7 @@ import type { LocalHighlight } from '@/services/localHighlights';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ExternalLink, Instagram, PlayCircle } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext'; // Assuming you might add translations later
+import { useLanguage } from '@/contexts/LanguageContext'; 
 
 // Helper for platform icon
 const PlatformIcon = ({ platform }: { platform: 'TikTok' | 'Instagram' }) => {
@@ -19,7 +19,6 @@ interface HighlightCardProps {
   highlight: LocalHighlight;
 }
 
-// Add translations if needed, e.g., for "View on"
 const cardTranslations = {
   viewOn: { 
     en: 'View on', 
@@ -33,18 +32,16 @@ const cardTranslations = {
 
 export function HighlightCard({ highlight }: HighlightCardProps) {
   const { selectedLanguage } = useLanguage();
-  // Placeholder for isMounted to prevent hydration errors if translations were complex
   // const [isMounted, setIsMounted] = useState(false);
   // useEffect(() => setIsMounted(true), []);
 
   const t = (fieldKey: keyof typeof cardTranslations): string => {
-    // Basic translation lookup, assuming selectedLanguage is available
     // @ts-ignore
     return cardTranslations[fieldKey]?.[selectedLanguage] || cardTranslations[fieldKey]?.['en'] || String(fieldKey);
   };
   
   return (
-    <Card className="w-full max-w-md mx-auto overflow-hidden shadow-xl rounded-xl bg-card">
+    <Card className="w-full max-w-lg mx-auto overflow-hidden shadow-xl rounded-xl bg-card"> {/* Changed max-w-md to max-w-lg */}
       <CardHeader className="p-4 pb-2">
         <CardTitle className="text-base font-semibold leading-tight truncate">{highlight.title}</CardTitle>
         {(highlight.username || highlight.location) && (
@@ -55,17 +52,13 @@ export function HighlightCard({ highlight }: HighlightCardProps) {
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="p-0 bg-black"> {/* bg-black helps with iframe letterboxing */}
+      <CardContent className="p-0 bg-black">
         <div
           className="w-full relative"
-          // TikToks are often 9:16. Instagram can be 1:1, 4:5, or 9:16 for reels.
-          // This attempts to create a responsive container.
-          // Using a fixed aspect ratio might be better if all videos are similar.
-          // For simplicity, a common social media video aspect ratio (e.g. 9:16, then controlled by max-height)
           style={{ 
-            paddingBottom: '177.77%', /* 9:16 Aspect Ratio */
-            maxHeight: '70vh', /* Limit height on larger screens */
-            height: 0, /* Required for padding-bottom trick to work */
+            paddingBottom: '177.77%', /* 9:16 Aspect Ratio for TikTok */
+            maxHeight: '80vh', /* Increased maxHeight to allow taller videos */
+            height: 0, 
           }}
         >
           <iframe
