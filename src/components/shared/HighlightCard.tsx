@@ -45,9 +45,13 @@ export function HighlightCard({ highlight, isObserved }: HighlightCardProps) {
         src={highlight.embedUrl}
         title={highlight.title}
         className="absolute top-0 left-0 w-full h-full border-0 max-w-none"
+        // The sandbox attribute MIGHT help prevent end-screen suggestions,
+        // but can also break other iframe functionalities. Test thoroughly.
+        // Common values: "allow-scripts allow-same-origin allow-popups allow-forms"
+        // For TikTok, starting with "allow-scripts allow-same-origin allow-popups allow-forms" is a common attempt.
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         allow="autoplay; encrypted-media; picture-in-picture"
         allowFullScreen
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         loading="lazy"
       ></iframe>
 
