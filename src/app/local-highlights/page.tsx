@@ -62,28 +62,43 @@ const pageTranslations = {
   },
 };
 
-// Hardcoded fallback data in case Firebase fetch fails or returns empty
+// Updated fallback data with known working examples
 const fallbackHighlights: LocalHighlight[] = [
   {
-    id: 'fallback1',
-    title: 'Beautiful Sunset in Rovinj',
+    id: 'fallback-insta-1',
+    title: 'Beautiful Croatian Coastline',
     platform: 'Instagram',
-    embedUrl: 'https://www.instagram.com/p/C2W8EApIVNn/embed', // Example, replace with actual embeddable URL
-    externalUrl: 'https://www.instagram.com/p/C2W8EApIVNn/',
-    username: 'croatia_lover',
-    description: 'Unforgettable evening in Istria!',
-    location: 'Rovinj, Croatia',
+    // Example of a public, embeddable Instagram post
+    embedUrl: 'https://www.instagram.com/p/C9Z6Xq8IGXh/embed/', 
+    externalUrl: 'https://www.instagram.com/p/C9Z6Xq8IGXh/',
+    username: 'croatiafulloflife',
+    description: 'Discover the stunning Adriatic coast. #CroatiaFullOfLife',
+    location: 'Adriatic Sea, Croatia',
+    category: 'scenery',
   },
   {
-    id: 'fallback2',
-    title: 'Plitvice Lakes Magic',
+    id: 'fallback-tiktok-1',
+    title: 'Adventures in Croatia by @cosinessandadventures',
     platform: 'TikTok',
-    embedUrl: 'https://www.tiktok.com/embed/v2/7089545730658700550', // Example, replace with actual VIDEO_ID
-    externalUrl: 'https://www.tiktok.com/@natureexplorer/video/7089545730658700550',
-    username: 'natureexplorer',
-    description: 'Walking through a fairytale at Plitvice National Park.',
-    category: 'nature',
-    location: 'Plitvice Lakes National Park',
+    // Using one of the user's provided URLs that is embeddable
+    embedUrl: 'https://www.tiktok.com/embed/v2/7388936115308268833', 
+    externalUrl: 'https://www.tiktok.com/@cosinessandadventures/video/7388936115308268833',
+    username: 'cosinessandadventures',
+    description: 'Exploring the natural beauty and adventures in Croatia.',
+    category: 'travel',
+    location: 'Croatia',
+  },
+   {
+    id: 'fallback-tiktok-2',
+    title: 'Travel Moments by @emigrantochka',
+    platform: 'TikTok',
+    // Using another of the user's provided URLs that is embeddable
+    embedUrl: 'https://www.tiktok.com/embed/v2/7411791667910511905', 
+    externalUrl: 'https://www.tiktok.com/@emigrantochka/video/7411791667910511905',
+    username: 'emigrantochka',
+    description: 'Capturing amazing travel experiences.',
+    category: 'travel',
+    location: 'Various Locations',
   },
 ];
 
@@ -102,12 +117,17 @@ export default function LocalHighlightsPage() {
 
     async function fetchHighlights() {
       setIsLoading(true);
-      const fetchedHighlights = await getLocalHighlights();
-      if (fetchedHighlights && fetchedHighlights.length > 0) {
-        setHighlights(fetchedHighlights);
-      } else {
-        // Use fallback data if Firebase returns empty or there's an issue
-        // console.log("Using fallback highlights as Firebase returned empty or failed.");
+      try {
+        const fetchedHighlights = await getLocalHighlights();
+        if (fetchedHighlights && fetchedHighlights.length > 0) {
+          setHighlights(fetchedHighlights);
+        } else {
+          // Use fallback data if Firebase returns empty or there's an issue
+          console.log("Using fallback highlights as Firebase returned empty or there was an issue fetching.");
+          setHighlights(fallbackHighlights);
+        }
+      } catch (error) {
+        console.error("Error in fetchHighlights, using fallback:", error);
         setHighlights(fallbackHighlights);
       }
       setIsLoading(false);
