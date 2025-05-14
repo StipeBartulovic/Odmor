@@ -138,13 +138,11 @@ export default function LocalHighlightsPage() {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         setObservedVideoId(entry.target.id);
-        // Attempt to play video - NOTE: This may not work due to iframe cross-origin restrictions
-        const videoElement = entry.target.querySelector('iframe');
-        videoElement?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        // Direct play/pause control of TikTok iframes via postMessage is unreliable.
+        // Relying on TikTok's default autoplay behavior when iframe becomes visible.
       } else {
-        // Attempt to pause video
-        const videoElement = entry.target.querySelector('iframe');
-        videoElement?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        // Logic for when video is not intersecting (e.g., attempting to pause)
+        // also faces the same cross-origin limitations with TikTok iframes.
       }
     });
   }, []);
@@ -189,14 +187,12 @@ export default function LocalHighlightsPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background"> {/* Changed min-h-screen to h-screen for full height */}
+    <div className="flex flex-col h-screen bg-background">
       <AppHeader />
-      {/* Main content area for scrollable videos. Header and Footer are outside this scrollable area. */}
-      <main className="flex-1 overflow-y-auto snap-y snap-mandatory"> {/* flex-1 to take remaining space, overflow-y-auto for scrolling */}
-        {/* This div acts as the scroll container for video sections */}
+      <main className="flex-1 overflow-y-auto snap-y snap-mandatory"> 
         <div className="relative"> 
           {isLoading ? (
-            <section className="h-screen flex flex-col items-center justify-center snap-start"> {/* Each section is full height */}
+            <section className="h-screen flex flex-col items-center justify-center snap-start">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
               <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
             </section>
@@ -206,7 +202,7 @@ export default function LocalHighlightsPage() {
                 key={highlight.id}
                 id={highlight.id}
                 ref={el => el ? videoRefs.current.set(highlight.id, el) : videoRefs.current.delete(highlight.id)}
-                className="h-screen w-full flex items-center justify-center snap-start relative" /* Full viewport height and snap */
+                className="h-screen w-full flex items-center justify-center snap-start relative"
               >
                 <HighlightCard 
                   highlight={highlight} 
@@ -222,10 +218,7 @@ export default function LocalHighlightsPage() {
           )}
         </div>
       </main>
-      {/* Footer is not part of the scrollable video area if we want full-screen videos taking all main space */}
-      {/* If footer should be visible, it needs to be outside the flex-1 main or the main needs fixed height */}
-      {/* For true TikTok style, footer might be overlaid or not present */}
-      {/* 
+      {/* Footer can be optionally re-added if needed, but is typically omitted in full-screen feeds
       <footer className="py-4 bg-muted text-center">
         <div className="container mx-auto px-4">
           <p className="text-sm text-muted-foreground">
