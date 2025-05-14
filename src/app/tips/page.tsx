@@ -10,7 +10,7 @@ import {
   Globe, Lightbulb, Wrench, CarFront, PlugZap, Utensils, Umbrella, Info, ExternalLink,
   ShieldAlert, Droplets, Landmark, Activity as ActivityIcon, Clock, Smartphone, Phone, TrafficCone, Ship, Bike, Squirrel,
   Power, BatteryCharging, Plug, Coins, Receipt, CigaretteOff, MessageSquare, Languages, Sun, Footprints, Ticket, ArrowLeft,
-  Loader2, ChevronLeft, ChevronRight
+  Loader2, ChevronLeft, ChevronRight, Youtube, PlayCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,38 @@ const pageTranslations = {
     pl: 'Wróć',
     fr: 'Retour',
     es: 'Volver',
+  },
+  videoSectionTitle: {
+    en: 'Prefer Watching? Explore Croatia on Video!',
+    it: 'Preferisci Guardare? Esplora la Croazia in Video!',
+    de: 'Schaust du lieber Videos? Entdecke Kroatien auf Video!',
+    pl: 'Wolisz Oglądać? Odkryj Chorwację na Wideo!',
+    fr: 'Vous Préférez Regarder ? Explorez la Croatie en Vidéo !',
+    es: '¿Prefieres Ver? ¡Explora Croacia en Vídeo!',
+  },
+  videoLinkExploreCroatia: {
+    en: 'Explore Croatia (Channel)',
+    it: 'Explore Croatia (Canale)',
+    de: 'Explore Croatia (Kanal)',
+    pl: 'Explore Croatia (Kanał)',
+    fr: 'Explore Croatia (Chaîne)',
+    es: 'Explore Croatia (Canal)',
+  },
+  videoLinkRoyalTours: {
+    en: 'Royal Croatian Tours: Croatia Travel Guide',
+    it: 'Royal Croatian Tours: Guida di Viaggio Croazia',
+    de: 'Royal Croatian Tours: Kroatien Reiseführer',
+    pl: 'Royal Croatian Tours: Przewodnik Turystyczny po Chorwacji',
+    fr: 'Royal Croatian Tours : Guide de Voyage Croatie',
+    es: 'Royal Croatian Tours: Guía de Viaje de Croacia',
+  },
+  videoLinkKamberizam: {
+    en: 'KAMBERizam: CROATIA - Hidden GEMS (Must See!)',
+    it: 'KAMBERizam: CROAZIA - Gemme Nascoste (Da Vedere!)',
+    de: 'KAMBERizam: KROATIEN - Versteckte Juwelen (Muss man sehen!)',
+    pl: 'KAMBERizam: CHORWACJA - Ukryte PEREŁKI (Musisz Zobaczyć!)',
+    fr: 'KAMBERizam : CROATIE - Joyaux Cachés (À Voir Absolument !)',
+    es: 'KAMBERizam: CROACIA - Joyas Ocultas (¡Debes Verlo!)',
   },
   didYouKnowTitle: {
     en: 'Did You Know?',
@@ -190,9 +222,33 @@ const getIcon = (iconName?: string): React.ElementType => {
     case 'Sun': return Sun;
     case 'Footprints': return Footprints;
     case 'Ticket': return Ticket;
+    case 'Youtube': return Youtube;
+    case 'PlayCircle': return PlayCircle;
     default: return Lightbulb;
   }
 };
+
+const videoLinks = [
+  {
+    id: 'exploreCroatia',
+    titleKey: 'videoLinkExploreCroatia' as keyof typeof pageTranslations,
+    url: 'https://www.youtube.com/@ExploreCroatia',
+    icon: Youtube,
+  },
+  {
+    id: 'royalCroatianTours',
+    titleKey: 'videoLinkRoyalTours' as keyof typeof pageTranslations,
+    url: 'https://www.youtube.com/watch?v=9ABCCP660tA', // Removed &ab_channel from URL
+    icon: Youtube,
+  },
+  {
+    id: 'kamberizam',
+    titleKey: 'videoLinkKamberizam' as keyof typeof pageTranslations,
+    url: 'https://www.youtube.com/watch?v=9SCTqUh7DP4', // Removed &t=209s&ab_channel from URL
+    icon: Youtube,
+  },
+];
+
 
 export default function TipsPage() {
   const router = useRouter();
@@ -311,6 +367,34 @@ export default function TipsPage() {
           ))}
         </div>
 
+        {/* Video Links Section */}
+        <Card className="shadow-xl rounded-xl mt-12">
+          <CardHeader className="bg-muted/30 p-4 md:p-6">
+            <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+              <PlayCircle className="h-7 w-7" />
+              {t('videoSectionTitle') as string}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6 space-y-3">
+            <ul className="space-y-2.5">
+              {videoLinks.map((video) => (
+                <li key={video.id}>
+                  <Link
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-accent hover:underline hover:text-primary transition-colors duration-200 p-2 rounded-md hover:bg-accent/10 -ml-2"
+                  >
+                    <video.icon className="h-5 w-5 shrink-0" />
+                    <span className="font-medium">{t(video.titleKey) as string}</span>
+                    <ExternalLink className="h-4 w-4 shrink-0 opacity-70" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+
         <Card className="shadow-xl rounded-xl mt-12">
           <CardHeader className="bg-muted/30 p-4 md:p-6">
             <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
@@ -320,7 +404,7 @@ export default function TipsPage() {
           </CardHeader>
           <CardContent className="p-4 md:p-6 text-muted-foreground space-y-3">
             <div className="relative">
-              <p className="text-base text-center min-h-[60px] flex items-center justify-center px-8"> {/* Added px-8 for spacing */}
+              <p className="text-base text-center min-h-[60px] flex items-center justify-center px-8">
                 {localizedDidYouKnowContent[currentFactIndex]}
               </p>
               <div className="flex justify-between items-center mt-4 w-full">
