@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather, ListChecks } from 'lucide-react';
+import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather, ListChecks, Baby } from 'lucide-react'; // Added Baby icon
 import { format } from "date-fns";
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
@@ -84,12 +84,20 @@ const translations = {
     es: 'Aún no se ha generado ningún viaje. ¡Rellena el formulario y haz clic en "Generar"!',
   },
   numPeopleLabel: {
-    en: 'Number of People',
-    it: 'Numero di Persone',
-    de: 'Anzahl der Personen',
-    pl: 'Liczba Osób',
-    fr: 'Nombre de Personnes',
-    es: 'Número de Personas',
+    en: 'Number of Adults', // Changed from 'Number of People'
+    it: 'Numero di Adulti',
+    de: 'Anzahl der Erwachsenen',
+    pl: 'Liczba Dorosłych',
+    fr: 'Nombre d\'Adultes',
+    es: 'Número de Adultos',
+  },
+  numChildrenLabel: { // New translation
+    en: 'Number of Children',
+    it: 'Numero di Bambini',
+    de: 'Anzahl der Kinder',
+    pl: 'Liczba Dzieci',
+    fr: 'Nombre d\'Enfants',
+    es: 'Número de Niños',
   },
   arrivalDateLabel: {
     en: 'Arrival Date',
@@ -143,7 +151,7 @@ const translations = {
     fr: 'ex., J\'adore la randonnée, préfère les endroits calmes, allergique aux fruits de mer.',
     es: 'p.ej., Me encanta el senderismo, prefiero lugares tranquilos, alérgico/a a los mariscos.',
   },
-  detailLevelLabel: { // Changed from scheduleDensityLabel for consistency, but the displayed text is what matters
+  scheduleDensityLabel: { 
     en: 'Schedule Density',
     it: 'Densità Programma',
     de: 'Zeitplandichte',
@@ -192,12 +200,20 @@ const translations = {
     es: 'Error al obtener el viaje',
   },
    errorMinPeople: {
-    en: 'Number of people must be at least 1.',
-    it: 'Il numero di persone deve essere almeno 1.',
-    de: 'Die Anzahl der Personen muss mindestens 1 betragen.',
-    pl: 'Liczba osób musi wynosić co najmniej 1.',
-    fr: 'Le nombre de personnes doit être d\'au moins 1.',
-    es: 'El número de personas debe ser de al menos 1.',
+    en: 'Number of adults must be at least 1.',
+    it: 'Il numero di adulti deve essere almeno 1.',
+    de: 'Die Anzahl der Erwachsenen muss mindestens 1 betragen.',
+    pl: 'Liczba dorosłych musi wynosić co najmniej 1.',
+    fr: 'Le nombre d\'adultes doit être d\'au moins 1.',
+    es: 'El número de adultos debe ser de al menos 1.',
+  },
+  errorMinChildren: { // New error message
+    en: 'Number of children cannot be negative.',
+    it: 'Il numero di bambini non può essere negativo.',
+    de: 'Die Anzahl der Kinder darf nicht negativ sein.',
+    pl: 'Liczba dzieci nie może być ujemna.',
+    fr: 'Le nombre d\'enfants ne peut pas être négatif.',
+    es: 'El número de niños no puede ser negativo.',
   },
   errorDateFormat: {
     en: 'Invalid date format.',
@@ -212,23 +228,17 @@ const translations = {
 const renderJourney = (text: string) => {
   if (!text) return null;
 
-  // Try to parse if it's a JSON string containing the actual journey string
   let journeyText = text;
   try {
     const parsedText = JSON.parse(text);
-    // Check if parsing resulted in an object with an 'output' field, as per the n8n example
-    if (typeof parsedText === 'object' && parsedText !== null && typeof parsedText.output === 'string') {
-      journeyText = parsedText.output;
-    } else if (Array.isArray(parsedText) && parsedText.length > 0 && typeof parsedText[0].output === 'string') {
-      // Handle array of objects with 'output' field
+    if (Array.isArray(parsedText) && parsedText.length > 0 && typeof parsedText[0].output === 'string') {
       journeyText = parsedText[0].output;
-    }
-    // If it's just a string after parsing (meaning the original string was double-encoded JSON of a string)
-    else if (typeof parsedText === 'string') {
+    } else if (typeof parsedText === 'object' && parsedText !== null && typeof parsedText.output === 'string') {
+      journeyText = parsedText.output;
+    } else if (typeof parsedText === 'string') {
         journeyText = parsedText;
     }
   } catch (e) {
-    // If parsing fails, assume 'text' is already the direct journey string
     // console.warn("Journey text is not a parsable JSON containing 'output', displaying as is.", e);
   }
 
@@ -242,10 +252,9 @@ const renderJourney = (text: string) => {
     const titleLine = lines[0];
     const contentLines = lines.slice(1);
     
-    // Enhanced heading detection
     const isHeading = titleLine.endsWith(':') || 
-                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip|Summary|Note|Suggestions|Important|Caution|Remember|Highlights|Overview)\b/i.test(titleLine.replace(/:\s*$/, '')) ||
-                      /^\s*[A-ZČĆŠĐŽ][A-Za-z\s\dčćšđžČĆŠĐŽ,.'-]*:\s*$/.test(titleLine); // Catches Title Case followed by colon
+                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip|Summary|Note|Suggestions|Important|Caution|Remember|Highlights|Overview|Budget|Transportation|Accommodation|Activities|Food|Dining|Cuisine)\b/i.test(titleLine.replace(/:\s*$/, '')) ||
+                      /^\s*[A-ZČĆŠĐŽ][A-Za-z\s\dčćšđžČĆŠĐŽ,.'-]*:\s*$/.test(titleLine);
 
     return (
       <div key={sectionIndex} className="mb-6 last:mb-0">
@@ -254,7 +263,6 @@ const renderJourney = (text: string) => {
             {titleLine.replace(/:\s*$/, '')}
           </h3>
         ) : (
-          // Non-headings are less common as section starters with this split logic, but handle just in case
           <p className="text-foreground mb-1.5 leading-relaxed font-semibold">{titleLine}</p>
         )}
         
@@ -262,26 +270,17 @@ const renderJourney = (text: string) => {
           line = line.trim();
           if (line === '') return null;
 
-          // Bolding specific keywords - expanded list
           let processedLine = line.replace(/\b(Budget|Transportation|Accommodation|Activities|Food|Dining|Cuisine|Important|Caution|Tip|Remember|Also|Additionally|Finally|Recommendation|Highlights|Note|Option|Must-see|Consider|Duration|Cost|Entry fee|Opening hours|Getting there)\b/gi, '<strong class="text-secondary">$1</strong>');
-          
-          // Bolding phrases like "Visit [Place Name]" or "Explore [Attraction]"
           processedLine = processedLine.replace(/(\b(Visit|Explore|Discover|Enjoy|Try|Experience|Check out|Head to|Dine at|Stop by|Learn about|Participate in|Book|Reserve)\s+[A-ZČĆŠĐŽ][A-Za-z\s\dčćšđžČĆŠĐŽ,.'()/-]+)/g, '<strong>$1</strong>');
-          
-          // Bolding time references like "9:00 AM -" or "2 hours"
           processedLine = processedLine.replace(/(\b\d{1,2}:\d{2}\s*(?:AM|PM)?\s*-?|\b\d+\s+(?:hour|hours|minute|minutes|day|days)\b)/gi, '<strong>$1</strong>');
-          
-          // Bolding currency amounts like €10-15
           processedLine = processedLine.replace(/([€$£]\s*\d+(?:[.,]\d{1,2})?(?:\s*-\s*[€$£]?\s*\d+(?:[.,]\d{1,2})?)?)/g, '<strong>$1</strong>');
           
-          // Handle list items (-, *, or 1.)
           if (/^(\s*-\s+|\s*\*\s+|\s*\d+\.\s+)/.test(line)) {
             return (
               <li key={lineIndex} className="text-foreground mb-1.5 ml-5 leading-relaxed list-disc" dangerouslySetInnerHTML={{ __html: processedLine.replace(/^(\s*-\s+)|(\s*\*\s+)|(\s*\d+\.\s+)/, '') }} />
             );
           }
-          // Handle sub-points that might just be indented text without a bullet
-          if (/^\s{2,}/.test(line) && !isHeading) { // Indented by 2 or more spaces
+          if (/^\s{2,}/.test(line) && !isHeading) { 
              return (
               <p key={lineIndex} className="text-foreground mb-1.5 ml-5 leading-relaxed" dangerouslySetInnerHTML={{ __html: processedLine }} />
             );
@@ -302,11 +301,12 @@ export function AiPromptInterface() {
 
   const [prompt, setPrompt] = useState('');
   const [numberOfPeople, setNumberOfPeople] = useState<number>(1);
+  const [numberOfChildren, setNumberOfChildren] = useState<number>(0); // New state
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(new Date());
   const [dailyBudget, setDailyBudget] = useState<string>('<$50');
   const [vehicleAvailability, setVehicleAvailability] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<string>('');
-  const [detailLevel, setDetailLevel] = useState<number>(1);
+  const [detailLevel, setDetailLevel] = useState<number>(1); // Renamed from scheduleDensity
 
   const [isLoading, setIsLoading] = useState(false);
   const [journey, setJourney] = useState<string | null>(null);
@@ -347,12 +347,19 @@ export function AiPromptInterface() {
       setIsLoading(false);
       return;
     }
+    if (numberOfChildren < 0) { // Validation for children
+      setError(t('errorMinChildren'));
+      setIsLoading(false);
+      return;
+    }
+
 
     const formattedArrivalDate = arrivalDate ? format(arrivalDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
 
     const formData = {
       prompt,
       numberOfPeople,
+      numberOfChildren, // Include in form data
       arrivalDate: formattedArrivalDate,
       dailyBudget,
       vehicleAvailability,
@@ -378,36 +385,27 @@ export function AiPromptInterface() {
         throw new Error(`${t('errorFetching')}: ${response.status} - ${errorData}`);
       }
       
-      // Expecting: { "myField": "[{\"output\":\"Generated journey string...\"}]" }
-      // OR { "myField": "Generated journey string..." }
       const responseData: { myField: string } = await response.json();
       
       let rawJourneyString: string | undefined;
 
       if (responseData && typeof responseData.myField === 'string') {
-        // myField contains the journey string, which might itself be a JSON string
         const tempField = responseData.myField;
         try {
-          // Attempt to parse myField if it's a JSON string containing the actual output object/array
           const parsedMyField = JSON.parse(tempField);
           if (Array.isArray(parsedMyField) && parsedMyField.length > 0 && typeof parsedMyField[0].output === 'string') {
-            rawJourneyString = parsedMyField[0].output; // If myField was "[{\"output\":\"...\"}]"
+            rawJourneyString = parsedMyField[0].output; 
           } else if (typeof parsedMyField === 'object' && parsedMyField !== null && typeof parsedMyField.output === 'string') {
-            rawJourneyString = parsedMyField.output; // If myField was "{\"output\":\"...\"}"
+            rawJourneyString = parsedMyField.output; 
           } else if (typeof parsedMyField === 'string') {
-             rawJourneyString = parsedMyField; // If myField was a double-encoded string like "\"Actual journey...\""
-          }
-           else {
-            // If parsedMyField is not in the expected structure, but tempField was a string, use tempField directly.
-            // This handles cases where myField is just the direct journey string.
+             rawJourneyString = parsedMyField; 
+          } else {
             rawJourneyString = tempField;
           }
         } catch (e) {
-          // If JSON.parse(tempField) fails, it means tempField is likely the direct journey string itself.
           rawJourneyString = tempField;
         }
       }
-
 
       if (rawJourneyString) {
         setJourney(rawJourneyString);
@@ -427,6 +425,7 @@ export function AiPromptInterface() {
   const handleTryAnother = () => {
     setPrompt('');
     setNumberOfPeople(1);
+    setNumberOfChildren(0); // Reset children
     setArrivalDate(new Date());
     setDailyBudget('<$50');
     setVehicleAvailability(false);
@@ -439,6 +438,7 @@ export function AiPromptInterface() {
         formRef.current.reset(); 
         setPrompt('');
         setNumberOfPeople(1);
+        setNumberOfChildren(0); // Also reset here for full form reset consistency
         setArrivalDate(new Date());
         setDailyBudget('<$50');
         setVehicleAvailability(false);
@@ -526,7 +526,7 @@ export function AiPromptInterface() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end"> {/* Changed to lg:grid-cols-4 */}
                   <div className="space-y-2">
                     <Label htmlFor="num-people" className="flex items-center gap-2 text-foreground">
                       <Users className="h-5 w-5 text-primary" />
@@ -538,6 +538,22 @@ export function AiPromptInterface() {
                       min="1"
                       value={numberOfPeople}
                       onChange={(e) => setNumberOfPeople(parseInt(e.target.value, 10))}
+                      className="rounded-lg shadow-sm"
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  <div className="space-y-2"> {/* New field for children */}
+                    <Label htmlFor="num-children" className="flex items-center gap-2 text-foreground">
+                      <Baby className="h-5 w-5 text-primary" />
+                      {t('numChildrenLabel')}
+                    </Label>
+                    <Input
+                      id="num-children"
+                      type="number"
+                      min="0"
+                      value={numberOfChildren}
+                      onChange={(e) => setNumberOfChildren(parseInt(e.target.value, 10))}
                       className="rounded-lg shadow-sm"
                       disabled={isLoading}
                     />
@@ -598,7 +614,7 @@ export function AiPromptInterface() {
                 <div className="space-y-2">
                   <Label htmlFor="detail-level" className="flex items-center gap-2 text-foreground">
                     <ListChecks className="h-5 w-5 text-primary" />
-                    {t('detailLevelLabel')}
+                    {t('scheduleDensityLabel')}
                   </Label>
                   <Slider
                     id="detail-level"
@@ -607,7 +623,7 @@ export function AiPromptInterface() {
                     step={1}
                     value={[detailLevel]}
                     onValueChange={(value) => setDetailLevel(value[0])}
-                    className="py-2 rounded-lg shadow-sm" // Removed shadow-sm, slider has its own styling
+                    className="py-2 rounded-lg" 
                     disabled={isLoading}
                   />
                   <p className="text-sm text-muted-foreground text-center pt-1">
@@ -645,10 +661,7 @@ export function AiPromptInterface() {
                         </div>
                     </div>
                 </div>
-
-
                 {error && <p className="text-destructive text-center font-medium">{error}</p>}
-
               </form>
             )}
           </CardContent>
@@ -657,4 +670,3 @@ export function AiPromptInterface() {
     </section>
   );
 }
-

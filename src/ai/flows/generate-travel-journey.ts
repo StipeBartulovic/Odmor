@@ -13,7 +13,8 @@ import {z} from 'genkit';
 
 const GenerateTravelJourneyInputSchema = z.object({
   prompt: z.string().describe('A natural language prompt describing the desired trip.'),
-  numberOfPeople: z.number().describe('The number of people in the travel party.'),
+  numberOfPeople: z.number().describe('The number of adults in the travel party.'),
+  numberOfChildren: z.number().describe('The number of children in the travel party.'),
   arrivalDate: z.string().describe('The arrival date for the trip.'),
   dailyBudget: z.string().describe('The daily budget for the trip (select range or enter approximate average).'),
   vehicleAvailability: z.boolean().describe('Whether a vehicle is available for the trip.'),
@@ -40,7 +41,8 @@ const prompt = ai.definePrompt({
 You will use the following information to generate a travel journey tailored to the user's needs and preferences.
 
 Prompt: {{{prompt}}}
-Number of People: {{{numberOfPeople}}}
+Number of Adults: {{{numberOfPeople}}}
+Number of Children: {{{numberOfChildren}}}
 Arrival Date: {{{arrivalDate}}}
 Daily Budget: {{{dailyBudget}}}
 Vehicle Availability: {{{vehicleAvailability}}}
@@ -61,4 +63,3 @@ const generateTravelJourneyFlow = ai.defineFlow(
     return output!; 
   }
 );
-
