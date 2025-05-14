@@ -3,9 +3,9 @@
 
 import type { LocalHighlight } from '@/services/localHighlights';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { ExternalLink, Instagram, PlayCircle } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext'; 
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Helper for platform icon
 const PlatformIcon = ({ platform }: { platform: 'TikTok' | 'Instagram' }) => {
@@ -17,70 +17,64 @@ const PlatformIcon = ({ platform }: { platform: 'TikTok' | 'Instagram' }) => {
 
 interface HighlightCardProps {
   highlight: LocalHighlight;
+  isObserved: boolean; 
 }
 
 const cardTranslations = {
-  viewOn: { 
-    en: 'View on', 
-    it: 'Guarda su', 
-    de: 'Ansehen auf', 
-    pl: 'Zobacz na', 
-    fr: 'Voir sur', 
-    es: 'Ver en' 
+  viewOn: {
+    en: 'View on',
+    it: 'Guarda su',
+    de: 'Ansehen auf',
+    pl: 'Zobacz na',
+    fr: 'Voir sur',
+    es: 'Ver en'
   },
 };
 
-export function HighlightCard({ highlight }: HighlightCardProps) {
+export function HighlightCard({ highlight, isObserved }: HighlightCardProps) {
   const { selectedLanguage } = useLanguage();
 
   const t = (fieldKey: keyof typeof cardTranslations): string => {
     // @ts-ignore
     return cardTranslations[fieldKey]?.[selectedLanguage] || cardTranslations[fieldKey]?.['en'] || String(fieldKey);
   };
-  
+
   return (
-    <Card className="w-full overflow-hidden shadow-xl rounded-xl bg-card"> {/* Removed max-w-lg and mx-auto */}
-      <CardHeader className="p-4 pb-2">
-        <CardTitle className="text-base font-semibold leading-tight truncate">{highlight.title}</CardTitle>
+    <Card className="w-full h-full relative bg-black overflow-hidden shadow-xl rounded-none">
+      <iframe
+        src={highlight.embedUrl}
+        title={highlight.title}
+        className="absolute top-0 left-0 w-full h-full border-0 max-w-none"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        loading="lazy"
+      ></iframe>
+
+      {/* Overlay for Information */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-10 bg-gradient-to-t from-black/80 via-black/50 to-transparent space-y-2">
+        <h2 className="text-lg font-bold text-white drop-shadow-md truncate">{highlight.title}</h2>
+
         {(highlight.username || highlight.location) && (
-          <CardDescription className="text-xs truncate">
+          <p className="text-xs text-gray-200 drop-shadow-sm truncate">
             {highlight.username && `@${highlight.username}`}
             {highlight.username && highlight.location && ' - '}
             {highlight.location}
-          </CardDescription>
+          </p>
         )}
-      </CardHeader>
-      <CardContent className="p-0 bg-black">
-        <div
-          className="w-full relative"
-          style={{ 
-            paddingBottom: '177.77%', /* 9:16 Aspect Ratio for TikTok */
-            maxHeight: '80vh', 
-            height: 0, 
-          }}
-        >
-          <iframe
-            src={highlight.embedUrl}
-            title={highlight.title}
-            className="absolute top-0 left-0 w-full h-full"
-            frameBorder="0"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowFullScreen
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            loading="lazy"
-          ></iframe>
-        </div>
-      </CardContent>
-      <CardFooter className="p-3 flex flex-col items-start gap-2">
-        {highlight.description && <p className="text-sm text-muted-foreground line-clamp-2">{highlight.description}</p>}
-        <Button asChild variant="outline" size="sm" className="w-full">
-          <a href={highlight.externalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center">
+
+        {highlight.description && (
+          <p className="text-sm text-gray-100 line-clamp-2 drop-shadow-sm">{highlight.description}</p>
+        )}
+
+        <Button asChild variant="outline" size="sm" className="w-full bg-white/20 hover:bg-white/30 border-white/30 text-white backdrop-blur-sm">
+          <a href={highlight.externalUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
             <PlatformIcon platform={highlight.platform} />
             <span className="ml-2 text-xs sm:text-sm">{t('viewOn')} {highlight.platform}</span>
             <ExternalLink className="ml-auto h-4 w-4" />
           </a>
         </Button>
-      </CardFooter>
+      </div>
     </Card>
   );
 }
