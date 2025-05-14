@@ -32,8 +32,6 @@ const cardTranslations = {
 
 export function HighlightCard({ highlight }: HighlightCardProps) {
   const { selectedLanguage } = useLanguage();
-  // const [isMounted, setIsMounted] = useState(false);
-  // useEffect(() => setIsMounted(true), []);
 
   const t = (fieldKey: keyof typeof cardTranslations): string => {
     // @ts-ignore
@@ -41,7 +39,7 @@ export function HighlightCard({ highlight }: HighlightCardProps) {
   };
   
   return (
-    <Card className="w-full max-w-lg mx-auto overflow-hidden shadow-xl rounded-xl bg-card"> {/* Changed max-w-md to max-w-lg */}
+    <Card className="w-full overflow-hidden shadow-xl rounded-xl bg-card"> {/* Removed max-w-lg and mx-auto */}
       <CardHeader className="p-4 pb-2">
         <CardTitle className="text-base font-semibold leading-tight truncate">{highlight.title}</CardTitle>
         {(highlight.username || highlight.location) && (
@@ -57,7 +55,7 @@ export function HighlightCard({ highlight }: HighlightCardProps) {
           className="w-full relative"
           style={{ 
             paddingBottom: '177.77%', /* 9:16 Aspect Ratio for TikTok */
-            maxHeight: '80vh', /* Increased maxHeight to allow taller videos */
+            maxHeight: '80vh', 
             height: 0, 
           }}
         >
