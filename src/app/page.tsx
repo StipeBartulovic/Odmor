@@ -6,8 +6,7 @@ import { AiPromptInterface } from '@/components/sections/AiPromptInterface';
 import { InteractiveMap } from '@/components/sections/InteractiveMap';
 import { ActivitiesSection } from '@/components/sections/ActivitiesSection';
 import { EventsSection } from '@/components/sections/EventsSection';
-// QuickMessageSection import removed
-import { Lightbulb, Link as LinkIconLucide, Loader2 } from 'lucide-react'; // Renamed Link to LinkIconLucide to avoid conflict
+import { Lightbulb, Link as LinkIconLucide, Loader2, Film } from 'lucide-react'; // Renamed Link to LinkIconLucide, Added Film
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
@@ -30,6 +29,14 @@ const pageTranslations = {
     pl: 'Przydatne Linki Turystyczne',
     fr: 'Liens Touristiques Utiles',
     es: 'Enlaces Turísticos Útiles',
+  },
+  localHighlightsButton: { // New translation
+    en: 'Local Highlights',
+    it: 'Attrazioni Locali',
+    de: 'Lokale Highlights',
+    pl: 'Lokalne Atrakcje',
+    fr: 'Points Forts Locaux',
+    es: 'Destacados Locales',
   },
   footerRights: {
     en: 'All rights reserved.',
@@ -99,16 +106,14 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
-      {/* The AppHeader is now sticky, so main content does not need explicit top padding related to header height here */}
       <main className="flex-grow container mx-auto px-4 py-8 space-y-12 md:space-y-16">
         <AiPromptInterface />
         <InteractiveMap />
         <ActivitiesSection />
         <EventsSection />
-        {/* QuickMessageSection removed from here */}
 
         <section className="py-8 md:py-12 text-center">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center flex-wrap gap-6 sm:gap-8">
             <HologramButton
               href="/tips"
               text={t('tipsButton')}
@@ -120,6 +125,12 @@ export default function HomePage() {
               text={t('usefulLinksButton')}
               icon={<LinkIconLucide />} 
               ariaLabel={t('usefulLinksButton')}
+            />
+            <HologramButton
+              href="/local-highlights" // New link
+              text={t('localHighlightsButton')} // New translation
+              icon={<Film />} // New icon
+              ariaLabel={t('localHighlightsButton')}
             />
           </div>
         </section>

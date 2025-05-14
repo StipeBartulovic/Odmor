@@ -1,0 +1,177 @@
+// src/app/local-highlights/page.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import { AppHeader } from '@/components/shared/AppHeader';
+import { HighlightCard } from '@/components/shared/HighlightCard';
+import type { LocalHighlight } from '@/services/localHighlights';
+import { getLocalHighlights } from '@/services/localHighlights';
+import { Loader2, ArrowLeft, VideoOff } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+
+const pageTranslations = {
+  title: {
+    en: 'Local Highlights',
+    it: 'Attrazioni Locali',
+    de: 'Lokale Highlights',
+    pl: 'Lokalne Atrakcje',
+    fr: 'Points Forts Locaux',
+    es: 'Destacados Locales',
+  },
+  subtitle: {
+    en: 'Discover inspiring moments and activities shared by others.',
+    it: 'Scopri momenti e attività stimolanti condivisi da altri.',
+    de: 'Entdecken Sie inspirierende Momente und Aktivitäten, die von anderen geteilt werden.',
+    pl: 'Odkryj inspirujące momenty i aktywności udostępnione przez innych.',
+    fr: 'Découvrez des moments inspirants et des activités partagées par d\'autres.',
+    es: 'Descubre momentos inspiradores y actividades compartidas por otros.',
+  },
+  loading: {
+    en: 'Loading highlights...',
+    it: 'Caricamento attrazioni...',
+    de: 'Lade Highlights...',
+    pl: 'Ładowanie atrakcji...',
+    fr: 'Chargement des points forts...',
+    es: 'Cargando destacados...',
+  },
+  noHighlights: {
+    en: 'No local highlights found at the moment. Check back soon!',
+    it: 'Nessuna attrazione locale trovata al momento. Torna presto!',
+    de: 'Im Moment wurden keine lokalen Highlights gefunden. Schauen Sie bald wieder vorbei!',
+    pl: 'Obecnie nie znaleziono lokalnych atrakcji. Sprawdź wkrótce!',
+    fr: 'Aucun point fort local trouvé pour le moment. Revenez bientôt !',
+    es: 'No se encontraron destacados locales en este momento. ¡Vuelve pronto!',
+  },
+  goBackButton: { 
+    en: 'Go Back', 
+    it: 'Torna Indietro', 
+    de: 'Zurück', 
+    pl: 'Wróć', 
+    fr: 'Retour', 
+    es: 'Volver' 
+  },
+   footerRights: { 
+    en: 'All rights reserved.', 
+    it: 'Tutti i diritti riservati.', 
+    de: 'Alle Rechte vorbehalten.', 
+    pl: 'Wszelkie prawa zastrzeżone.', 
+    fr: 'Tous droits réservés.', 
+    es: 'Todos los derechos reservados.' 
+  },
+};
+
+// Hardcoded fallback data in case Firebase fetch fails or returns empty
+const fallbackHighlights: LocalHighlight[] = [
+  {
+    id: 'fallback1',
+    title: 'Beautiful Sunset in Rovinj',
+    platform: 'Instagram',
+    embedUrl: 'https://www.instagram.com/p/C2W8EApIVNn/embed', // Example, replace with actual embeddable URL
+    externalUrl: 'https://www.instagram.com/p/C2W8EApIVNn/',
+    username: 'croatia_lover',
+    description: 'Unforgettable evening in Istria!',
+    location: 'Rovinj, Croatia',
+  },
+  {
+    id: 'fallback2',
+    title: 'Plitvice Lakes Magic',
+    platform: 'TikTok',
+    embedUrl: 'https://www.tiktok.com/embed/v2/7089545730658700550', // Example, replace with actual VIDEO_ID
+    externalUrl: 'https://www.tiktok.com/@natureexplorer/video/7089545730658700550',
+    username: 'natureexplorer',
+    description: 'Walking through a fairytale at Plitvice National Park.',
+    category: 'nature',
+    location: 'Plitvice Lakes National Park',
+  },
+];
+
+
+export default function LocalHighlightsPage() {
+  const router = useRouter();
+  const { selectedLanguage } = useLanguage();
+  const [highlights, setHighlights] = useState<LocalHighlight[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setCurrentYear(new Date().getFullYear());
+
+    async function fetchHighlights() {
+      setIsLoading(true);
+      const fetchedHighlights = await getLocalHighlights();
+      if (fetchedHighlights && fetchedHighlights.length > 0) {
+        setHighlights(fetchedHighlights);
+      } else {
+        // Use fallback data if Firebase returns empty or there's an issue
+        // console.log("Using fallback highlights as Firebase returned empty or failed.");
+        setHighlights(fallbackHighlights);
+      }
+      setIsLoading(false);
+    }
+    fetchHighlights();
+  }, []);
+
+  const t = (fieldKey: keyof typeof pageTranslations): string => {
+    const langToUse = isMounted ? selectedLanguage : 'en';
+    // @ts-ignore
+    const translation = pageTranslations[fieldKey]?.[langToUse] || pageTranslations[fieldKey]?.['en'];
+    return typeof translation === 'string' ? translation : String(fieldKey);
+  };
+
+  if (!isMounted || currentYear === null) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
+      </div>
+    );
+  }
+
+
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      <AppHeader />
+      <main className="flex-grow container mx-auto px-2 py-8 sm:px-4">
+        <div className="mb-8">
+          <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            {t('goBackButton')}
+          </Button>
+        </div>
+        <header className="text-center mb-8 md:mb-12">
+          <h1 className="text-3xl md:text-4xl font-bold text-primary">{t('title')}</h1>
+          <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">{t('subtitle')}</p>
+        </header>
+
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-10">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
+          </div>
+        ) : highlights.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 md:gap-8">
+            {highlights.map((highlight) => (
+              <HighlightCard key={highlight.id} highlight={highlight} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
+            <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
+          </div>
+        )}
+      </main>
+      <footer className="py-8 bg-muted text-center mt-12">
+        <div className="container mx-auto px-4">
+          <p className="text-sm text-muted-foreground">
+            &copy; {currentYear} odmarAI. {t('footerRights')}
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
