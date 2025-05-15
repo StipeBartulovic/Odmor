@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather, ListChecks, Baby } from 'lucide-react'; // Added Baby icon
+import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather, ListChecks, Baby, Clock4 } from 'lucide-react'; // Added Baby, Clock4 icon
 import { format } from "date-fns";
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
@@ -84,14 +84,14 @@ const translations = {
     es: 'Aún no se ha generado ningún viaje. ¡Rellena el formulario y haz clic en "Generar"!',
   },
   numPeopleLabel: {
-    en: 'Number of Adults', // Changed from 'Number of People'
+    en: 'Number of Adults',
     it: 'Numero di Adulti',
     de: 'Anzahl der Erwachsenen',
     pl: 'Liczba Dorosłych',
     fr: 'Nombre d\'Adultes',
     es: 'Número de Adultos',
   },
-  numChildrenLabel: { // New translation
+  numChildrenLabel: { 
     en: 'Number of Children',
     it: 'Numero di Bambini',
     de: 'Anzahl der Kinder',
@@ -191,6 +191,18 @@ const translations = {
     fr: 'Immersion Complète: Plan heure par heure pour une expérience guidée et dense.',
     es: 'Inmersión Total: Plan hora por hora para una experiencia guiada y completa.',
   },
+  timeDistanceLabel: {
+    en: 'Max Travel Time to Activities',
+    it: 'Tempo Max Viaggio per Attività',
+    de: 'Max. Reisezeit zu Aktivitäten',
+    pl: 'Maks. Czas Podróży do Aktywności',
+    fr: 'Temps de Trajet Max vers Activités',
+    es: 'Tiempo Máx. Viaje a Actividades',
+  },
+  timeDistanceOption1: { en: 'Within 30 min', it: 'Entro 30 min', de: 'Innerhalb 30 Min', pl: 'W ciągu 30 min', fr: 'Moins de 30 min', es: 'Menos de 30 min' },
+  timeDistanceOption2: { en: 'Within 1 hour', it: 'Entro 1 ora', de: 'Innerhalb 1 Std', pl: 'W ciągu 1 godz.', fr: 'Moins de 1 heure', es: 'Menos de 1 hora' },
+  timeDistanceOption3: { en: 'Within 2 hours', it: 'Entro 2 ore', de: 'Innerhalb 2 Std', pl: 'W ciągu 2 godz.', fr: 'Moins de 2 heures', es: 'Menos de 2 horas' },
+  timeDistanceOption4: { en: 'Flexible / Any', it: 'Flessibile / Qualsiasi', de: 'Flexibel / Beliebig', pl: 'Elastycznie / Dowolnie', fr: 'Flexible / Illimité', es: 'Flexible / Cualquiera' },
   errorFetching: {
     en: 'Error fetching journey',
     it: 'Errore nel recupero del viaggio',
@@ -207,7 +219,7 @@ const translations = {
     fr: 'Le nombre d\'adultes doit être d\'au moins 1.',
     es: 'El número de adultos debe ser de al menos 1.',
   },
-  errorMinChildren: { // New error message
+  errorMinChildren: { 
     en: 'Number of children cannot be negative.',
     it: 'Il numero di bambini non può essere negativo.',
     de: 'Die Anzahl der Kinder darf nicht negativ sein.',
@@ -230,15 +242,18 @@ const renderJourney = (text: string) => {
 
   let journeyText = text;
   try {
+    // Attempt to parse the text as if it's a JSON string that might contain an array or an object with an 'output' field
     const parsedText = JSON.parse(text);
     if (Array.isArray(parsedText) && parsedText.length > 0 && typeof parsedText[0].output === 'string') {
-      journeyText = parsedText[0].output;
+      journeyText = parsedText[0].output; // Extract from the first element if it's an array with 'output'
     } else if (typeof parsedText === 'object' && parsedText !== null && typeof parsedText.output === 'string') {
-      journeyText = parsedText.output;
+      journeyText = parsedText.output; // Extract from 'output' field if it's an object
     } else if (typeof parsedText === 'string') {
-        journeyText = parsedText;
+        journeyText = parsedText; // If parsing results in a string (e.g., "{\"output\":\"Actual text...\"}"), use it
     }
+    // If none of the above, journeyText remains the original text, which might be the direct output already
   } catch (e) {
+    // If parsing fails, it means the text is likely already the direct string output.
     // console.warn("Journey text is not a parsable JSON containing 'output', displaying as is.", e);
   }
 
@@ -301,12 +316,13 @@ export function AiPromptInterface() {
 
   const [prompt, setPrompt] = useState('');
   const [numberOfPeople, setNumberOfPeople] = useState<number>(1);
-  const [numberOfChildren, setNumberOfChildren] = useState<number>(0); // New state
+  const [numberOfChildren, setNumberOfChildren] = useState<number>(0);
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(new Date());
   const [dailyBudget, setDailyBudget] = useState<string>('<$50');
   const [vehicleAvailability, setVehicleAvailability] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<string>('');
-  const [detailLevel, setDetailLevel] = useState<number>(1); // Renamed from scheduleDensity
+  const [detailLevel, setDetailLevel] = useState<number>(1); 
+  const [timeDistance, setTimeDistance] = useState<string>('Within 1 hour'); // New state
 
   const [isLoading, setIsLoading] = useState(false);
   const [journey, setJourney] = useState<string | null>(null);
@@ -347,7 +363,7 @@ export function AiPromptInterface() {
       setIsLoading(false);
       return;
     }
-    if (numberOfChildren < 0) { // Validation for children
+    if (numberOfChildren < 0) { 
       setError(t('errorMinChildren'));
       setIsLoading(false);
       return;
@@ -359,12 +375,13 @@ export function AiPromptInterface() {
     const formData = {
       prompt,
       numberOfPeople,
-      numberOfChildren, // Include in form data
+      numberOfChildren, 
       arrivalDate: formattedArrivalDate,
       dailyBudget,
       vehicleAvailability,
       preferences,
       detailLevel,
+      timeDistance, // Include new field
     };
 
     try {
@@ -425,12 +442,13 @@ export function AiPromptInterface() {
   const handleTryAnother = () => {
     setPrompt('');
     setNumberOfPeople(1);
-    setNumberOfChildren(0); // Reset children
+    setNumberOfChildren(0); 
     setArrivalDate(new Date());
     setDailyBudget('<$50');
     setVehicleAvailability(false);
     setPreferences('');
     setDetailLevel(1);
+    setTimeDistance('Within 1 hour'); // Reset new field
     setJourney(null);
     setError(null);
     setIsLoading(false);
@@ -438,12 +456,13 @@ export function AiPromptInterface() {
         formRef.current.reset(); 
         setPrompt('');
         setNumberOfPeople(1);
-        setNumberOfChildren(0); // Also reset here for full form reset consistency
+        setNumberOfChildren(0); 
         setArrivalDate(new Date());
         setDailyBudget('<$50');
         setVehicleAvailability(false);
         setPreferences('');
         setDetailLevel(1);
+        setTimeDistance('Within 1 hour'); // Reset new field
     }
   };
   
@@ -526,7 +545,7 @@ export function AiPromptInterface() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end"> {/* Changed to lg:grid-cols-4 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end"> {/* Changed to lg:grid-cols-5 */}
                   <div className="space-y-2">
                     <Label htmlFor="num-people" className="flex items-center gap-2 text-foreground">
                       <Users className="h-5 w-5 text-primary" />
@@ -543,7 +562,7 @@ export function AiPromptInterface() {
                     />
                   </div>
 
-                  <div className="space-y-2"> {/* New field for children */}
+                  <div className="space-y-2"> 
                     <Label htmlFor="num-children" className="flex items-center gap-2 text-foreground">
                       <Baby className="h-5 w-5 text-primary" />
                       {t('numChildrenLabel')}
@@ -606,6 +625,28 @@ export function AiPromptInterface() {
                         <SelectItem value="$50-$100">{t('budgetOption2')}</SelectItem>
                         <SelectItem value="$100-$200">{t('budgetOption3')}</SelectItem>
                         <SelectItem value="$200+">{t('budgetOption4')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2"> {/* New Time Distance field */}
+                    <Label htmlFor="time-distance" className="flex items-center gap-2 text-foreground">
+                      <Clock4 className="h-5 w-5 text-primary" />
+                       {t('timeDistanceLabel')}
+                    </Label>
+                    <Select 
+                        value={timeDistance} 
+                        onValueChange={setTimeDistance}
+                        disabled={isLoading}
+                    >
+                      <SelectTrigger className="w-full rounded-lg shadow-sm" id="time-distance">
+                        <SelectValue placeholder={t('timeDistanceLabel')} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border shadow-lg rounded-md">
+                        <SelectItem value="Within 30 min">{t('timeDistanceOption1')}</SelectItem>
+                        <SelectItem value="Within 1 hour">{t('timeDistanceOption2')}</SelectItem>
+                        <SelectItem value="Within 2 hours">{t('timeDistanceOption3')}</SelectItem>
+                        <SelectItem value="Flexible / Any">{t('timeDistanceOption4')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -20,11 +20,12 @@ const GenerateTravelJourneyInputSchema = z.object({
   vehicleAvailability: z.boolean().describe('Whether a vehicle is available for the trip.'),
   preferences: z.string().describe('The likes and dislikes of the travel party.'),
   detailLevel: z.number().describe('The desired schedule density for the journey (0: Light Outline, 1: Balanced Guide, 2: Detailed Plan, 3: Full Immersion).'),
+  timeDistance: z.string().describe('The maximum preferred travel time to activities or destinations (e.g., "Within 30 min", "Within 1 hour", "Within 2 hours", "Flexible / Any").'),
 });
 export type GenerateTravelJourneyInput = z.infer<typeof GenerateTravelJourneyInputSchema>;
 
 const GenerateTravelJourneyOutputSchema = z.object({
-  journey: z.string().describe('A personalized travel journey with destinations, travel times, cost estimates, and dining options, tailored to the specified detail level.'),
+  journey: z.string().describe('A personalized travel journey with destinations, travel times, cost estimates, and dining options, tailored to the specified detail level and time distance preferences.'),
 });
 export type GenerateTravelJourneyOutput = z.infer<typeof GenerateTravelJourneyOutputSchema>;
 
@@ -48,6 +49,7 @@ Daily Budget: {{{dailyBudget}}}
 Vehicle Availability: {{{vehicleAvailability}}}
 Preferences: {{{preferences}}}
 Schedule Density: {{{detailLevel}}} (Interpret 0 as a Light Outline with minimal guidance, 1 as a Balanced Guide with key activities and suggestions, 2 as a Detailed Plan with more structure, and 3 as a Full Immersion plan with hourly specifics for a packed day. Adjust the verbosity and specificity of the generated plan accordingly.)
+Maximum Travel Time to Activities: {{{timeDistance}}} (Consider this preference when suggesting locations and activities. If "Flexible / Any", you have more freedom. Otherwise, try to keep suggestions within the specified travel time from a central point or previous activity, assuming reasonable travel methods.)
 
 Generate a detailed travel journey with destinations, travel times, cost estimates, and dining options. Ensure the output is a single string that can be directly displayed.`,  
 });
