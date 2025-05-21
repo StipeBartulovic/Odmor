@@ -111,89 +111,93 @@ export default function FeedbackPage() {
     }
   };
   
-  if (!isMounted || currentYear === null) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
+  const PageFooter = () => (
+    <footer className="py-8 bg-muted text-center">
+      <div className="container mx-auto px-4">
+        <p className="text-sm text-muted-foreground">
+          &copy; {currentYear} odmarAI. {t('footerRights')}
+        </p>
       </div>
-    );
-  }
+    </footer>
+  );
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
-      <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
-        <div className="mb-8">
-          <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            {t('goBackButton')}
-          </Button>
-        </div>
-        <Card className="shadow-xl rounded-xl max-w-2xl mx-auto">
-          <CardHeader className="bg-muted/50 p-6 text-center">
-            <CardTitle className="text-2xl md:text-3xl font-semibold text-primary flex items-center justify-center gap-2">
-              <MessageSquareIcon className="h-8 w-8" />
-              {t('title')}
-            </CardTitle>
-            <CardDescription className="mt-2">{t('subtitle')}</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 md:p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="feedback-email" className="flex items-center gap-2 text-foreground">
-                  <Mail className="h-5 w-5 text-primary" />
-                  {t('emailLabel')}
-                </Label>
-                <Input
-                  id="feedback-email"
-                  type="email"
-                  placeholder={t('emailPlaceholder')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-lg shadow-sm"
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="feedback-message" className="flex items-center gap-2 text-foreground">
-                  <MessageSquareIcon className="h-5 w-5 text-primary" />
-                  {t('messageLabel')}
-                </Label>
-                <Textarea
-                  id="feedback-message"
-                  placeholder={t('messagePlaceholder')}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="rounded-lg shadow-sm min-h-[150px]"
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-              <Button type="submit" size="lg" className="w-full rounded-lg shadow-md flex items-center gap-2 bg-primary hover:bg-primary/90">
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    {t('sendingMessage')}
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-5 w-5" />
-                    {t('submitButton')}
-                  </>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </main>
-      <footer className="py-8 bg-muted text-center">
-        <div className="container mx-auto px-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} odmarAI. {t('footerRights')}
-          </p>
-        </div>
-      </footer>
+      {(!isMounted || currentYear === null) ? (
+        <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto" />
+            <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
+          </div>
+        </main>
+      ) : (
+        <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
+          <div className="mb-8">
+            <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              {t('goBackButton')}
+            </Button>
+          </div>
+          <Card className="shadow-xl rounded-xl max-w-2xl mx-auto">
+            <CardHeader className="bg-muted/50 p-6 text-center">
+              <CardTitle className="text-2xl md:text-3xl font-semibold text-primary flex items-center justify-center gap-2">
+                <MessageSquareIcon className="h-8 w-8" />
+                {t('title')}
+              </CardTitle>
+              <CardDescription className="mt-2">{t('subtitle')}</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 md:p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="feedback-email" className="flex items-center gap-2 text-foreground">
+                    <Mail className="h-5 w-5 text-primary" />
+                    {t('emailLabel')}
+                  </Label>
+                  <Input
+                    id="feedback-email"
+                    type="email"
+                    placeholder={t('emailPlaceholder')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="rounded-lg shadow-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="feedback-message" className="flex items-center gap-2 text-foreground">
+                    <MessageSquareIcon className="h-5 w-5 text-primary" />
+                    {t('messageLabel')}
+                  </Label>
+                  <Textarea
+                    id="feedback-message"
+                    placeholder={t('messagePlaceholder')}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="rounded-lg shadow-sm min-h-[150px]"
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                <Button type="submit" size="lg" className="w-full rounded-lg shadow-md flex items-center gap-2 bg-primary hover:bg-primary/90">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      {t('sendingMessage')}
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5" />
+                      {t('submitButton')}
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </main>
+      )}
+      {isMounted && currentYear !== null && <PageFooter />}
     </div>
   );
 }

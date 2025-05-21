@@ -138,11 +138,6 @@ export default function LocalHighlightsPage() {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         setObservedVideoId(entry.target.id);
-        // Direct play/pause control of TikTok iframes via postMessage is unreliable.
-        // Relying on TikTok's default autoplay behavior when iframe becomes visible.
-      } else {
-        // Logic for when video is not intersecting (e.g., attempting to pause)
-        // also faces the same cross-origin limitations with TikTok iframes.
       }
     });
   }, []);
@@ -177,56 +172,48 @@ export default function LocalHighlightsPage() {
     return typeof translation === 'string' ? translation : String(fieldKey);
   };
 
-  if (!isMounted || currentYear === null) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
-      <main className="flex-1 overflow-y-auto snap-y snap-mandatory"> 
-        <div className="relative"> 
-          {isLoading ? (
-            <section className="h-screen flex flex-col items-center justify-center snap-start">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
-            </section>
-          ) : highlights.length > 0 ? (
-            highlights.map((highlight) => (
-              <section 
-                key={highlight.id}
-                id={highlight.id}
-                ref={el => el ? videoRefs.current.set(highlight.id, el) : videoRefs.current.delete(highlight.id)}
-                className="h-screen w-full flex items-center justify-center snap-start relative"
-              >
-                <HighlightCard 
-                  highlight={highlight} 
-                  isObserved={observedVideoId === highlight.id} 
-                />
+      {(!isMounted || currentYear === null) ? (
+        <main className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto" />
+            <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
+          </div>
+        </main>
+      ) : (
+        <main className="flex-1 overflow-y-auto snap-y snap-mandatory"> 
+          <div className="relative"> 
+            {isLoading ? (
+              <section className="h-screen flex flex-col items-center justify-center snap-start">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
               </section>
-            ))
-          ) : (
-            <section className="h-screen flex flex-col items-center justify-center text-center snap-start p-4">
-              <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
-              <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
-            </section>
-          )}
-        </div>
-      </main>
-      {/* Footer can be optionally re-added if needed, but is typically omitted in full-screen feeds
-      <footer className="py-4 bg-muted text-center">
-        <div className="container mx-auto px-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} odmarAI. {t('footerRights')}
-          </p>
-        </div>
-      </footer> 
-      */}
+            ) : highlights.length > 0 ? (
+              highlights.map((highlight) => (
+                <section 
+                  key={highlight.id}
+                  id={highlight.id}
+                  ref={el => el ? videoRefs.current.set(highlight.id, el) : videoRefs.current.delete(highlight.id)}
+                  className="h-screen w-full flex items-center justify-center snap-start relative"
+                >
+                  <HighlightCard 
+                    highlight={highlight} 
+                    isObserved={observedVideoId === highlight.id} 
+                  />
+                </section>
+              ))
+            ) : (
+              <section className="h-screen flex flex-col items-center justify-center text-center snap-start p-4">
+                <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
+              </section>
+            )}
+          </div>
+        </main>
+      )}
+      {/* Footer can be optionally re-added if needed, but is typically omitted in full-screen feeds */}
     </div>
   );
 }

@@ -165,94 +165,97 @@ export default function UsefulLinksPage() {
     return textObj[langToUse] || textObj.en || '';
   };
 
-  if (!isMounted || currentYear === null) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
+  const PageFooter = () => (
+    <footer className="py-8 bg-muted text-center">
+      <div className="container mx-auto px-4">
+        <p className="text-sm text-muted-foreground">
+          &copy; {currentYear} odmarAI. {t('footerRights')}
+        </p>
       </div>
-    );
-  }
+    </footer>
+  );
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
-      <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
-        <div className="mb-8">
-          <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            {t('goBackButton')}
-          </Button>
-        </div>
+      {(!isMounted || currentYear === null) ? (
+        <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto" />
+            <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
+          </div>
+        </main>
+      ) : (
+        <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
+          <div className="mb-8">
+            <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              {t('goBackButton')}
+            </Button>
+          </div>
 
-        <header className="text-center space-y-4 mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary flex items-center justify-center gap-3">
-            <LinkIconLucide className="h-10 w-10" /> 
-            {t('title')}
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            {t('subtitle')}
-          </p>
-        </header>
+          <header className="text-center space-y-4 mb-12">
+            <h1 className="text-3xl md:text-4xl font-bold text-primary flex items-center justify-center gap-3">
+              <LinkIconLucide className="h-10 w-10" /> 
+              {t('title')}
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              {t('subtitle')}
+            </p>
+          </header>
 
-        <div className="space-y-8">
-          {usefulLinksData.map((category: UsefulLinkCategory) => (
-            <Card key={getLocalizedText(category.title)} className="shadow-xl rounded-xl overflow-hidden">
-              <CardHeader className="bg-muted/30 p-4 md:p-6">
-                <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
-                  {React.createElement(getLinkIconElement(category.categoryIcon), { className: "h-7 w-7" })}
-                  {getLocalizedText(category.title)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 md:p-6 space-y-3">
-                <p className="text-muted-foreground text-sm md:text-base">{getLocalizedText(category.description)}</p>
-                <ul className="space-y-2.5">
-                  {category.links.map((linkItem: UsefulLinkItem, index: number) => (
-                    <li key={`${getLocalizedText(linkItem.text)}-${index}`}>
-                      <Link
-                        href={linkItem.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-accent hover:underline hover:text-primary transition-colors duration-200 p-2 rounded-md hover:bg-accent/10 -ml-2"
-                      >
-                        {React.createElement(getLinkIconElement(linkItem.icon), { className: "h-5 w-5 shrink-0" })}
-                        <span className="font-medium">{getLocalizedText(linkItem.text)}</span>
-                        <ExternalLink className="h-4 w-4 shrink-0 opacity-70" />
-                      </Link>
-                      {linkItem.description && <p className="text-xs text-muted-foreground ml-7 -mt-1">{getLocalizedText(linkItem.description)}</p>}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+          <div className="space-y-8">
+            {usefulLinksData.map((category: UsefulLinkCategory) => (
+              <Card key={getLocalizedText(category.title)} className="shadow-xl rounded-xl overflow-hidden">
+                <CardHeader className="bg-muted/30 p-4 md:p-6">
+                  <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+                    {React.createElement(getLinkIconElement(category.categoryIcon), { className: "h-7 w-7" })}
+                    {getLocalizedText(category.title)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 md:p-6 space-y-3">
+                  <p className="text-muted-foreground text-sm md:text-base">{getLocalizedText(category.description)}</p>
+                  <ul className="space-y-2.5">
+                    {category.links.map((linkItem: UsefulLinkItem, index: number) => (
+                      <li key={`${getLocalizedText(linkItem.text)}-${index}`}>
+                        <Link
+                          href={linkItem.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-accent hover:underline hover:text-primary transition-colors duration-200 p-2 rounded-md hover:bg-accent/10 -ml-2"
+                        >
+                          {React.createElement(getLinkIconElement(linkItem.icon), { className: "h-5 w-5 shrink-0" })}
+                          <span className="font-medium">{getLocalizedText(linkItem.text)}</span>
+                          <ExternalLink className="h-4 w-4 shrink-0 opacity-70" />
+                        </Link>
+                        {linkItem.description && <p className="text-xs text-muted-foreground ml-7 -mt-1">{getLocalizedText(linkItem.description)}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-        {/* Live News Section */}
-        <Card className="shadow-xl rounded-xl mt-12 border-2 border-primary animate-pulse">
-          <CardHeader className="bg-muted/30 p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
-              <RadioTower className="h-7 w-7 text-primary" />
-              <span>
-                <span className="animate-pulse text-primary font-bold">{t('liveNewsPrefix')}</span> {t('liveNewsSuffix')}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6 space-y-3 text-muted-foreground">
-            <p className="text-sm md:text-base">{t('newsItem1')}</p>
-            <p className="text-sm md:text-base">{t('newsItem2')}</p>
-            <p className="text-sm md:text-base">{t('newsItem3')}</p>
-          </CardContent>
-        </Card>
-
-      </main>
-      <footer className="py-8 bg-muted text-center">
-        <div className="container mx-auto px-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} odmarAI. {t('footerRights')}
-          </p>
-        </div>
-      </footer>
+          {/* Live News Section */}
+          <Card className="shadow-xl rounded-xl mt-12 border-2 border-primary animate-pulse">
+            <CardHeader className="bg-muted/30 p-4 md:p-6">
+              <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+                <RadioTower className="h-7 w-7 text-primary" />
+                <span>
+                  <span className="animate-pulse text-primary font-bold">{t('liveNewsPrefix')}</span> {t('liveNewsSuffix')}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 space-y-3 text-muted-foreground">
+              <p className="text-sm md:text-base">{t('newsItem1')}</p>
+              <p className="text-sm md:text-base">{t('newsItem2')}</p>
+              <p className="text-sm md:text-base">{t('newsItem3')}</p>
+            </CardContent>
+          </Card>
+        </main>
+      )}
+      {isMounted && currentYear !== null && <PageFooter />}
     </div>
   );
 }

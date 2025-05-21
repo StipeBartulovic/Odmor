@@ -291,160 +291,161 @@ export default function TipsPage() {
     setCurrentFactIndex((prevIndex) => (prevIndex - 1 + localizedDidYouKnowContent.length) % localizedDidYouKnowContent.length);
   };
 
-
-  if (!isMounted || currentYear === null) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="text-xl text-muted-foreground mt-4">{t('loading') as string}</p>
+  const PageFooter = () => (
+    <footer className="py-8 bg-muted text-center">
+      <div className="container mx-auto px-4">
+        <p className="text-sm text-muted-foreground">
+          &copy; {currentYear} odmarAI. {t('footerRights') as string}
+        </p>
       </div>
-    );
-  }
-
+    </footer>
+  );
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
-      <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
-        <div className="mb-8">
-          <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            {t('goBackButton') as string}
-          </Button>
-        </div>
+      {(!isMounted || currentYear === null) ? (
+        <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto" />
+            <p className="text-xl text-muted-foreground mt-4">{t('loading') as string}</p>
+          </div>
+        </main>
+      ) : (
+        <main className="flex-grow container mx-auto px-4 py-8 space-y-12">
+          <div className="mb-8">
+            <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              {t('goBackButton') as string}
+            </Button>
+          </div>
 
-        <header className="text-center space-y-4 mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary flex items-center justify-center gap-3">
-            <Globe className="h-10 w-10" />
-            {t('title') as string}
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            {t('subtitle') as string}
-          </p>
-        </header>
+          <header className="text-center space-y-4 mb-12">
+            <h1 className="text-3xl md:text-4xl font-bold text-primary flex items-center justify-center gap-3">
+              <Globe className="h-10 w-10" />
+              {t('title') as string}
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              {t('subtitle') as string}
+            </p>
+          </header>
 
-        <div className="space-y-8">
-          {tipsData.map((category: TipCategory) => (
-            <Card key={getLocalizedText(category.title)} className="shadow-xl rounded-xl overflow-hidden">
-              <CardHeader className="bg-muted/30 p-4 md:p-6">
-                <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
-                  {React.createElement(getIcon(category.icon), { className: "h-7 w-7" })}
-                  {getLocalizedText(category.title)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Accordion type="multiple" className="w-full">
-                  {category.tips.map((tip: Tip, index: number) => (
-                    <AccordionItem 
-                      key={`${getLocalizedText(category.title)}-${index}`}
-                      value={`item-${getLocalizedText(category.title).replace(/\s+/g, '-')}-${index}`} 
-                      className="border-b last:border-b-0"
+          <div className="space-y-8">
+            {tipsData.map((category: TipCategory) => (
+              <Card key={getLocalizedText(category.title)} className="shadow-xl rounded-xl overflow-hidden">
+                <CardHeader className="bg-muted/30 p-4 md:p-6">
+                  <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+                    {React.createElement(getIcon(category.icon), { className: "h-7 w-7" })}
+                    {getLocalizedText(category.title)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Accordion type="multiple" className="w-full">
+                    {category.tips.map((tip: Tip, index: number) => (
+                      <AccordionItem 
+                        key={`${getLocalizedText(category.title)}-${index}`}
+                        value={`item-${getLocalizedText(category.title).replace(/\s+/g, '-')}-${index}`} 
+                        className="border-b last:border-b-0"
+                      >
+                        <AccordionTrigger className="text-base md:text-lg font-medium hover:no-underline py-3 px-4 md:px-6 text-left">
+                          <div className="flex items-center gap-2 w-full">
+                            {tip.icon && React.createElement(getIcon(tip.icon), { className: "h-5 w-5 text-primary shrink-0" })}
+                            <span className="flex-grow">{getLocalizedText(tip.title)}</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="text-sm md:text-base text-muted-foreground pt-1 pb-3 px-4 md:px-6 space-y-2">
+                          <p>{getLocalizedText(tip.description)}</p>
+                          {tip.link && (
+                            <Link
+                              href={tip.link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-accent hover:underline"
+                            >
+                              {getLocalizedText(tip.link.text)} <ExternalLink className="h-4 w-4" />
+                            </Link>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Video Links Section */}
+          <Card className="shadow-xl rounded-xl mt-12">
+            <CardHeader className="bg-muted/30 p-4 md:p-6">
+              <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+                <PlayCircle className="h-7 w-7" />
+                {t('videoSectionTitle') as string}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 space-y-3">
+              <ul className="space-y-2.5">
+                {videoLinks.map((video) => (
+                  <li key={video.id}>
+                    <Link
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-accent hover:underline hover:text-primary transition-colors duration-200 p-2 rounded-md hover:bg-accent/10 -ml-2"
                     >
-                      <AccordionTrigger className="text-base md:text-lg font-medium hover:no-underline py-3 px-4 md:px-6 text-left">
-                        <div className="flex items-center gap-2 w-full">
-                          {tip.icon && React.createElement(getIcon(tip.icon), { className: "h-5 w-5 text-primary shrink-0" })}
-                          <span className="flex-grow">{getLocalizedText(tip.title)}</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="text-sm md:text-base text-muted-foreground pt-1 pb-3 px-4 md:px-6 space-y-2">
-                        <p>{getLocalizedText(tip.description)}</p>
-                        {tip.link && (
-                          <Link
-                            href={tip.link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-accent hover:underline"
-                          >
-                            {getLocalizedText(tip.link.text)} <ExternalLink className="h-4 w-4" />
-                          </Link>
-                        )}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                      <video.icon className="h-5 w-5 shrink-0" />
+                      <span className="font-medium">{t(video.titleKey) as string}</span>
+                      <ExternalLink className="h-4 w-4 shrink-0 opacity-70" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
 
-        {/* Video Links Section */}
-        <Card className="shadow-xl rounded-xl mt-12">
-          <CardHeader className="bg-muted/30 p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
-              <PlayCircle className="h-7 w-7" />
-              {t('videoSectionTitle') as string}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6 space-y-3">
-            <ul className="space-y-2.5">
-              {videoLinks.map((video) => (
-                <li key={video.id}>
-                  <Link
-                    href={video.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-accent hover:underline hover:text-primary transition-colors duration-200 p-2 rounded-md hover:bg-accent/10 -ml-2"
+          <Card className="shadow-xl rounded-xl mt-12">
+            <CardHeader className="bg-muted/30 p-4 md:p-6">
+              <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+                <Info className="h-7 w-7" />
+                {t('didYouKnowTitle') as string}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 text-muted-foreground space-y-3">
+              <div className="relative">
+                <p className="text-base text-center min-h-[60px] flex items-center justify-center px-8">
+                  {localizedDidYouKnowContent[currentFactIndex]}
+                </p>
+                <div className="flex justify-between items-center mt-4 w-full">
+                  <div
+                    onClick={prevFact}
+                    className="p-1.5 rounded-full cursor-pointer hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-in-out transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') prevFact(); }}
+                    aria-label={t('previousFact') as string}
                   >
-                    <video.icon className="h-5 w-5 shrink-0" />
-                    <span className="font-medium">{t(video.titleKey) as string}</span>
-                    <ExternalLink className="h-4 w-4 shrink-0 opacity-70" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-xl rounded-xl mt-12">
-          <CardHeader className="bg-muted/30 p-4 md:p-6">
-            <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
-              <Info className="h-7 w-7" />
-              {t('didYouKnowTitle') as string}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6 text-muted-foreground space-y-3">
-            <div className="relative">
-              <p className="text-base text-center min-h-[60px] flex items-center justify-center px-8">
-                {localizedDidYouKnowContent[currentFactIndex]}
-              </p>
-              <div className="flex justify-between items-center mt-4 w-full">
-                <div
-                  onClick={prevFact}
-                  className="p-1.5 rounded-full cursor-pointer hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-in-out transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') prevFact(); }}
-                  aria-label={t('previousFact') as string}
-                >
-                  <ChevronLeft className="h-5 w-5 text-primary" />
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {currentFactIndex + 1} / {localizedDidYouKnowContent.length}
-                </span>
-                <div
-                  onClick={nextFact}
-                  className="p-1.5 rounded-full cursor-pointer hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-in-out transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') nextFact(); }}
-                  aria-label={t('nextFact') as string}
-                >
-                  <ChevronRight className="h-5 w-5 text-primary" />
+                    <ChevronLeft className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {currentFactIndex + 1} / {localizedDidYouKnowContent.length}
+                  </span>
+                  <div
+                    onClick={nextFact}
+                    className="p-1.5 rounded-full cursor-pointer hover:bg-accent/10 active:bg-accent/20 transition-all duration-150 ease-in-out transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') nextFact(); }}
+                    aria-label={t('nextFact') as string}
+                  >
+                    <ChevronRight className="h-5 w-5 text-primary" />
+                  </div>
                 </div>
               </div>
-            </div>
-            <p className="text-xs italic mt-6 pt-3 border-t border-muted/20">{t('moreTipsFooter') as string}</p>
-          </CardContent>
-        </Card>
-
-      </main>
-      <footer className="py-8 bg-muted text-center">
-        <div className="container mx-auto px-4">
-          <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} odmarAI. {t('footerRights') as string}
-          </p>
-        </div>
-      </footer>
+              <p className="text-xs italic mt-6 pt-3 border-t border-muted/20">{t('moreTipsFooter') as string}</p>
+            </CardContent>
+          </Card>
+        </main>
+      )}
+      {isMounted && currentYear !== null && <PageFooter />}
     </div>
   );
 }
