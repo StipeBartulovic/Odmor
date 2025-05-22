@@ -160,8 +160,8 @@ export default function LocalHighlightsPage() {
   const [observedVideoId, setObservedVideoId] = useState<string | null>(null);
   const [isGridView, setIsGridView] = useState(false);
   
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const videoRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const feedObserverRef = useRef<IntersectionObserver | null>(null);
+  const feedVideoRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   useEffect(() => {
     setIsMounted(true);
@@ -179,15 +179,12 @@ export default function LocalHighlightsPage() {
     async function fetchHighlights() {
       setIsLoading(true);
       try {
-        const fetchedHighlights = await getLocalHighlights(); // Assuming this fetches from Firebase
+        const fetchedHighlights = await getLocalHighlights(); 
         const combinedHighlights = [...(fetchedHighlights && fetchedHighlights.length > 0 ? fetchedHighlights : []), ...fallbackHighlights.filter(fb => !(fetchedHighlights || []).find(fh => fh.id === fb.id))]
-                                  .filter(h => h.embedUrl && h.embedUrl.includes('tiktok.com/embed/v2/null') === false); // Filter out bad URLs
+                                  .filter(h => h.embedUrl && h.embedUrl.includes('tiktok.com/embed/v2/null') === false);
         
-        // Remove duplicates by ID, preferring fetched over fallback
         const uniqueHighlights = Array.from(new Map(combinedHighlights.map(item => [item.id, item])).values());
-
         setHighlights(uniqueHighlights);
-
       } catch (error) {
         console.error("Error in fetchHighlights, using only fallback:", error);
         setHighlights(fallbackHighlights.filter(h => h.embedUrl && h.embedUrl.includes('tiktok.com/embed/v2/null') === false));
@@ -199,8 +196,8 @@ export default function LocalHighlightsPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
-    if (isGridView) return; // Observer logic only for feed view
+  const handleFeedIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
+    if (isGridView) return; 
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         setObservedVideoId(entry.target.id);
@@ -209,32 +206,32 @@ export default function LocalHighlightsPage() {
   }, [isGridView]);
 
   useEffect(() => {
-    if (isGridView || highlights.length === 0 || typeof window === 'undefined') {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
+    if (isGridView || highlights.length === 0 || typeof window === 'undefined' || !isMounted) {
+      if (feedObserverRef.current) {
+        feedObserverRef.current.disconnect();
       }
       return;
     }
 
-    observerRef.current = new IntersectionObserver(handleIntersection, {
-      root: null,
+    feedObserverRef.current = new IntersectionObserver(handleFeedIntersection, {
+      root: null, // observing intersections with the viewport
       rootMargin: '0px',
-      threshold: 0.75, 
+      threshold: 0.75, // When 75% of the item is visible
     });
 
-    videoRefs.current.forEach(videoEl => {
-      if (videoEl && observerRef.current) {
-        observerRef.current.observe(videoEl);
+    feedVideoRefs.current.forEach(videoEl => {
+      if (videoEl && feedObserverRef.current) {
+        feedObserverRef.current.observe(videoEl);
       }
     });
 
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
+      if (feedObserverRef.current) {
+        feedObserverRef.current.disconnect();
       }
-      videoRefs.current.clear();
+      feedVideoRefs.current.clear();
     };
-  }, [highlights, handleIntersection, isGridView]);
+  }, [highlights, handleFeedIntersection, isGridView, isMounted]);
 
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
@@ -263,7 +260,7 @@ export default function LocalHighlightsPage() {
             <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
           </div>
         </main>
-        <PageFooter />
+        {isMounted && currentYear !== null && <PageFooter />}
       </div>
     );
   }
@@ -273,10 +270,10 @@ export default function LocalHighlightsPage() {
       <AppHeader />
       <main className={clsx(
         "flex-grow",
-        !isGridView && "overflow-y-auto snap-y snap-mandatory", // Snap scroll for mobile/feed view
-        isGridView && "container mx-auto px-4 py-8" // Container for grid view
+        !isGridView && "overflow-y-auto snap-y snap-mandatory", 
+        isGridView && "container mx-auto px-4 py-8" 
       )}>
-        <div className="mb-8 container mx-auto px-4 py-4 md:py-0"> {/* Moved Go Back button here to be always visible */}
+        <div className="mb-8 container mx-auto px-4 py-4 md:py-0">
            <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
              <ArrowLeft className="mr-2 h-5 w-5" />
              {t('goBackButton')}
@@ -290,22 +287,22 @@ export default function LocalHighlightsPage() {
           </div>
         ) : highlights.length > 0 ? (
           <div className={clsx(
-            isGridView && "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
+            isGridView && "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" // Adjusted grid columns
           )}>
-            {highlights.map((highlight) => (
+            {highlights.map((highlight, index) => (
               <section 
                 key={highlight.id}
-                id={highlight.id}
-                ref={el => el ? videoRefs.current.set(highlight.id, el) : videoRefs.current.delete(highlight.id)}
+                id={highlight.id} // Used by feedObserverRef for feed view
+                ref={el => el && !isGridView ? feedVideoRefs.current.set(highlight.id, el) : feedVideoRefs.current.delete(highlight.id)}
                 className={clsx(
                   !isGridView && "h-screen w-full flex items-center justify-center snap-start relative"
-                  // Grid items don't need specific height/snap classes here, HighlightCard handles its aspect
                 )}
               >
                 <HighlightCard 
                   highlight={highlight} 
                   isObserved={observedVideoId === highlight.id && !isGridView}
                   isGridView={isGridView}
+                  isInitiallyVisible={!isGridView && index < 2} // Eager load first 2 for feed view
                 />
               </section>
             ))}
