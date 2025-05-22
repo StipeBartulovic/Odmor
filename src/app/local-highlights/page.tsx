@@ -10,6 +10,7 @@ import { Loader2, ArrowLeft, VideoOff } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import clsx from 'clsx';
 
 const pageTranslations = {
   title: {
@@ -62,9 +63,24 @@ const pageTranslations = {
   },
 };
 
+// Helper to extract video ID from URL
+const getTikTokVideoId = (url: string): string | null => {
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    // Video ID is usually the last part of the path before query params
+    const videoId = pathParts.find(part => /^\d+$/.test(part));
+    return videoId || null;
+  } catch (e) {
+    console.error("Error parsing TikTok URL:", e);
+    return null;
+  }
+};
+
+
 const fallbackHighlights: LocalHighlight[] = [
   {
-    id: 'fallback-tiktok-1',
+    id: 'tiktok-cosinessandadventures',
     title: 'Adventures in Croatia by @cosinessandadventures',
     platform: 'TikTok',
     embedUrl: 'https://www.tiktok.com/embed/v2/7388936115308268833', 
@@ -75,7 +91,7 @@ const fallbackHighlights: LocalHighlight[] = [
     location: 'Croatia',
   },
    {
-    id: 'fallback-tiktok-2',
+    id: 'tiktok-emigrantochka',
     title: 'Travel Moments by @emigrantochka',
     platform: 'TikTok',
     embedUrl: 'https://www.tiktok.com/embed/v2/7411791667910511905', 
@@ -86,7 +102,7 @@ const fallbackHighlights: LocalHighlight[] = [
     location: 'Various Locations',
   },
   {
-    id: 'fallback-tiktok-3',
+    id: 'tiktok-msurinaa',
     title: 'Croatian Scenery by @msurinaa',
     platform: 'TikTok',
     embedUrl: 'https://www.tiktok.com/embed/v2/7499780431143914774', 
@@ -95,9 +111,44 @@ const fallbackHighlights: LocalHighlight[] = [
     description: 'Beautiful views from Croatia.',
     category: 'scenery',
     location: 'Croatia',
+  },
+  {
+    id: 'tiktok-raulrabuzz',
+    title: 'CR7 Goal by @raulrabuzz',
+    platform: 'TikTok',
+    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@raulrabuzz/video/7505876094474521879")}`,
+    externalUrl: 'https://www.tiktok.com/@raulrabuzz/video/7505876094474521879',
+    username: 'raulrabuzz',
+    description: 'Napokon životna želja #CR7',
+    category: 'sports',
+    location: 'Stadium',
+  },
+  {
+    id: 'tiktok-hopppee1',
+    title: 'Funny Moment by @hopppee1',
+    platform: 'TikTok',
+    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@hopppee1/video/7506127902539271430")}`,
+    externalUrl: 'https://www.tiktok.com/@hopppee1/video/7506127902539271430',
+    username: 'hopppee1',
+    description: 'Osigurala sam sebi mjesto za pakao',
+    category: 'comedy',
+    location: 'Unknown',
+  },
+  {
+    id: 'tiktok-jugoslavija88',
+    title: 'Music by @jugoslavija88',
+    platform: 'TikTok',
+    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@jugoslavija88/video/7480657307068599574")}`,
+    externalUrl: 'https://www.tiktok.com/@jugoslavija88/video/7480657307068599574',
+    username: 'jugoslavija88',
+    description: '#jugoslavija #halidmuslimovic',
+    category: 'music',
+    location: 'Nostalgia',
   }
 ];
 
+
+const DESKTOP_BREAKPOINT = 768; // md breakpoint in Tailwind
 
 export default function LocalHighlightsPage() {
   const router = useRouter();
@@ -107,63 +158,83 @@ export default function LocalHighlightsPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
   const [observedVideoId, setObservedVideoId] = useState<string | null>(null);
+  const [isGridView, setIsGridView] = useState(false);
   
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const videoRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const videoRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   useEffect(() => {
     setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
 
+    const handleResize = () => {
+      if (typeof window !== 'undefined') {
+        setIsGridView(window.innerWidth >= DESKTOP_BREAKPOINT);
+      }
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+
     async function fetchHighlights() {
       setIsLoading(true);
       try {
-        const fetchedHighlights = await getLocalHighlights();
-        if (fetchedHighlights && fetchedHighlights.length > 0) {
-          setHighlights(fetchedHighlights);
-        } else {
-          console.log("Using fallback highlights as Firebase returned empty or there was an issue fetching.");
-          setHighlights(fallbackHighlights);
-        }
+        const fetchedHighlights = await getLocalHighlights(); // Assuming this fetches from Firebase
+        const combinedHighlights = [...(fetchedHighlights && fetchedHighlights.length > 0 ? fetchedHighlights : []), ...fallbackHighlights.filter(fb => !(fetchedHighlights || []).find(fh => fh.id === fb.id))]
+                                  .filter(h => h.embedUrl && h.embedUrl.includes('tiktok.com/embed/v2/null') === false); // Filter out bad URLs
+        
+        // Remove duplicates by ID, preferring fetched over fallback
+        const uniqueHighlights = Array.from(new Map(combinedHighlights.map(item => [item.id, item])).values());
+
+        setHighlights(uniqueHighlights);
+
       } catch (error) {
-        console.error("Error in fetchHighlights, using fallback:", error);
-        setHighlights(fallbackHighlights);
+        console.error("Error in fetchHighlights, using only fallback:", error);
+        setHighlights(fallbackHighlights.filter(h => h.embedUrl && h.embedUrl.includes('tiktok.com/embed/v2/null') === false));
       }
       setIsLoading(false);
     }
     fetchHighlights();
+    
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
+    if (isGridView) return; // Observer logic only for feed view
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         setObservedVideoId(entry.target.id);
       }
     });
-  }, []);
+  }, [isGridView]);
 
   useEffect(() => {
-    if (highlights.length > 0 && typeof window !== 'undefined') {
-      observerRef.current = new IntersectionObserver(handleIntersection, {
-        root: null, // viewport
-        rootMargin: '0px',
-        threshold: 0.75, // 75% of the video is visible
-      });
-
-      videoRefs.current.forEach(videoEl => {
-        if (videoEl && observerRef.current) {
-          observerRef.current.observe(videoEl);
-        }
-      });
-
-      return () => {
-        if (observerRef.current) {
-          observerRef.current.disconnect();
-        }
-        videoRefs.current.clear();
-      };
+    if (isGridView || highlights.length === 0 || typeof window === 'undefined') {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+      return;
     }
-  }, [highlights, handleIntersection]);
+
+    observerRef.current = new IntersectionObserver(handleIntersection, {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.75, 
+    });
+
+    videoRefs.current.forEach(videoEl => {
+      if (videoEl && observerRef.current) {
+        observerRef.current.observe(videoEl);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+      videoRefs.current.clear();
+    };
+  }, [highlights, handleIntersection, isGridView]);
 
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
@@ -171,49 +242,82 @@ export default function LocalHighlightsPage() {
     const translation = pageTranslations[fieldKey]?.[langToUse] || pageTranslations[fieldKey]?.['en'];
     return typeof translation === 'string' ? translation : String(fieldKey);
   };
+  
+  const PageFooter = () => (
+    <footer className="py-8 bg-muted text-center">
+      <div className="container mx-auto px-4">
+        <p className="text-sm text-muted-foreground">
+          &copy; {currentYear} odmarAI. {t('footerRights')}
+        </p>
+      </div>
+    </footer>
+  );
 
-  return (
-    <div className="flex flex-col h-screen bg-background">
-      <AppHeader />
-      {(!isMounted || currentYear === null) ? (
-        <main className="flex-grow flex items-center justify-center">
+  if (!isMounted || currentYear === null) {
+     return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <AppHeader />
+        <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto" />
             <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
           </div>
         </main>
-      ) : (
-        <main className="flex-1 overflow-y-auto snap-y snap-mandatory"> 
-          <div className="relative"> 
-            {isLoading ? (
-              <section className="h-screen flex flex-col items-center justify-center snap-start">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
-              </section>
-            ) : highlights.length > 0 ? (
-              highlights.map((highlight) => (
-                <section 
-                  key={highlight.id}
-                  id={highlight.id}
-                  ref={el => el ? videoRefs.current.set(highlight.id, el) : videoRefs.current.delete(highlight.id)}
-                  className="h-screen w-full flex items-center justify-center snap-start relative"
-                >
-                  <HighlightCard 
-                    highlight={highlight} 
-                    isObserved={observedVideoId === highlight.id} 
-                  />
-                </section>
-              ))
-            ) : (
-              <section className="h-screen flex flex-col items-center justify-center text-center snap-start p-4">
-                <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
-              </section>
-            )}
+        <PageFooter />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      <AppHeader />
+      <main className={clsx(
+        "flex-grow",
+        !isGridView && "overflow-y-auto snap-y snap-mandatory", // Snap scroll for mobile/feed view
+        isGridView && "container mx-auto px-4 py-8" // Container for grid view
+      )}>
+        <div className="mb-8 container mx-auto px-4 py-4 md:py-0"> {/* Moved Go Back button here to be always visible */}
+           <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
+             <ArrowLeft className="mr-2 h-5 w-5" />
+             {t('goBackButton')}
+           </Button>
+         </div>
+
+        {isLoading ? (
+          <div className={clsx("flex flex-col items-center justify-center", isGridView ? "py-10" : "h-screen snap-start")}>
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
           </div>
-        </main>
-      )}
-      {/* Footer can be optionally re-added if needed, but is typically omitted in full-screen feeds */}
+        ) : highlights.length > 0 ? (
+          <div className={clsx(
+            isGridView && "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
+          )}>
+            {highlights.map((highlight) => (
+              <section 
+                key={highlight.id}
+                id={highlight.id}
+                ref={el => el ? videoRefs.current.set(highlight.id, el) : videoRefs.current.delete(highlight.id)}
+                className={clsx(
+                  !isGridView && "h-screen w-full flex items-center justify-center snap-start relative"
+                  // Grid items don't need specific height/snap classes here, HighlightCard handles its aspect
+                )}
+              >
+                <HighlightCard 
+                  highlight={highlight} 
+                  isObserved={observedVideoId === highlight.id && !isGridView}
+                  isGridView={isGridView}
+                />
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className={clsx("flex flex-col items-center justify-center text-center p-4", isGridView ? "py-10" : "h-screen snap-start")}>
+            <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
+            <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
+          </div>
+        )}
+      </main>
+      {isMounted && currentYear !== null && <PageFooter />}
     </div>
   );
 }
