@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather, ListChecks, Baby, Clock4 } from 'lucide-react'; // Added Baby, Clock4 icon
+import { Loader2, Wand2, RotateCcw, CalendarIcon, Users, DollarSign, Car, Feather, ListChecks, Baby, Clock4 } from 'lucide-react';
 import { format } from "date-fns";
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
@@ -242,21 +242,26 @@ const renderJourney = (text: string) => {
 
   let journeyText = text;
   try {
-    // Attempt to parse the text as if it's a JSON string that might contain an array or an object with an 'output' field
-    const parsedText = JSON.parse(text);
+    const parsedText = JSON.parse(text); // First, parse the outer JSON string if it's a stringified JSON.
+    
+    // Check if parsedText is an array and has the 'output' field in its first element
     if (Array.isArray(parsedText) && parsedText.length > 0 && typeof parsedText[0].output === 'string') {
-      journeyText = parsedText[0].output; // Extract from the first element if it's an array with 'output'
-    } else if (typeof parsedText === 'object' && parsedText !== null && typeof parsedText.output === 'string') {
-      journeyText = parsedText.output; // Extract from 'output' field if it's an object
-    } else if (typeof parsedText === 'string') {
-        journeyText = parsedText; // If parsing results in a string (e.g., "{\"output\":\"Actual text...\"}"), use it
+      journeyText = parsedText[0].output; 
+    } 
+    // Check if parsedText is an object and has the 'output' field
+    else if (typeof parsedText === 'object' && parsedText !== null && typeof parsedText.output === 'string') {
+      journeyText = parsedText.output;
     }
-    // If none of the above, journeyText remains the original text, which might be the direct output already
+    // If the original text was already a direct string (not a JSON string containing 'output'),
+    // or if parsing didn't yield 'output', journeyText remains as is (or as the parsed string if it was just a simple string in JSON).
+    else if (typeof parsedText === 'string') {
+        journeyText = parsedText;
+    }
+
   } catch (e) {
     // If parsing fails, it means the text is likely already the direct string output.
     // console.warn("Journey text is not a parsable JSON containing 'output', displaying as is.", e);
   }
-
 
   const sections = journeyText.split(/\n\s*(?=[A-Za-z\s\dčćšđžČĆŠĐŽ\(\)]+:)/)
     .map(section => section.trim())
@@ -268,7 +273,7 @@ const renderJourney = (text: string) => {
     const contentLines = lines.slice(1);
     
     const isHeading = titleLine.endsWith(':') || 
-                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip|Summary|Note|Suggestions|Important|Caution|Remember|Highlights|Overview|Budget|Transportation|Accommodation|Activities|Food|Dining|Cuisine)\b/i.test(titleLine.replace(/:\s*$/, '')) ||
+                      /\b(Morning|Midday|Afternoon|Evening|Night|Practical advice|Day \d+|Tip|Summary|Note|Suggestions|Important|Caution|Remember|Highlights|Overview|Budget|Transportation|Accommodation|Activities|Food|Dining|Cuisine|Itinerary)\b/i.test(titleLine.replace(/:\s*$/, '')) ||
                       /^\s*[A-ZČĆŠĐŽ][A-Za-z\s\dčćšđžČĆŠĐŽ,.'-]*:\s*$/.test(titleLine);
 
     return (
@@ -322,7 +327,7 @@ export function AiPromptInterface() {
   const [vehicleAvailability, setVehicleAvailability] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<string>('');
   const [detailLevel, setDetailLevel] = useState<number>(1); 
-  const [timeDistance, setTimeDistance] = useState<string>('Within 1 hour'); // New state
+  const [timeDistance, setTimeDistance] = useState<string>('Within 1 hour');
 
   const [isLoading, setIsLoading] = useState(false);
   const [journey, setJourney] = useState<string | null>(null);
@@ -381,7 +386,7 @@ export function AiPromptInterface() {
       vehicleAvailability,
       preferences,
       detailLevel,
-      timeDistance, // Include new field
+      timeDistance,
     };
 
     try {
@@ -402,32 +407,20 @@ export function AiPromptInterface() {
         throw new Error(`${t('errorFetching')}: ${response.status} - ${errorData}`);
       }
       
+      // Expecting: { "myField": "[{\"output\":\"Actual journey string...\"}]" }
+      // OR { "myField": "Actual journey string..." } if n8n output is already a plain string.
       const responseData: { myField: string } = await response.json();
       
-      let rawJourneyString: string | undefined;
+      let rawJourneyStringFromMyField: string | undefined;
 
       if (responseData && typeof responseData.myField === 'string') {
-        const tempField = responseData.myField;
-        try {
-          const parsedMyField = JSON.parse(tempField);
-          if (Array.isArray(parsedMyField) && parsedMyField.length > 0 && typeof parsedMyField[0].output === 'string') {
-            rawJourneyString = parsedMyField[0].output; 
-          } else if (typeof parsedMyField === 'object' && parsedMyField !== null && typeof parsedMyField.output === 'string') {
-            rawJourneyString = parsedMyField.output; 
-          } else if (typeof parsedMyField === 'string') {
-             rawJourneyString = parsedMyField; 
-          } else {
-            rawJourneyString = tempField;
-          }
-        } catch (e) {
-          rawJourneyString = tempField;
-        }
+        rawJourneyStringFromMyField = responseData.myField; // This is the string that might contain JSON or just be the journey text
       }
 
-      if (rawJourneyString) {
-        setJourney(rawJourneyString);
+      if (rawJourneyStringFromMyField) {
+        setJourney(rawJourneyStringFromMyField); // Pass the raw string to renderJourney
       } else {
-        console.warn("Received unexpected response structure or empty journey string:", responseData);
+        console.warn("Received unexpected response structure or empty myField string:", responseData);
         setJourney(t('noJourney')); 
       }
 
@@ -448,7 +441,7 @@ export function AiPromptInterface() {
     setVehicleAvailability(false);
     setPreferences('');
     setDetailLevel(1);
-    setTimeDistance('Within 1 hour'); // Reset new field
+    setTimeDistance('Within 1 hour');
     setJourney(null);
     setError(null);
     setIsLoading(false);
@@ -462,7 +455,7 @@ export function AiPromptInterface() {
         setVehicleAvailability(false);
         setPreferences('');
         setDetailLevel(1);
-        setTimeDistance('Within 1 hour'); // Reset new field
+        setTimeDistance('Within 1 hour');
     }
   };
   
@@ -545,7 +538,7 @@ export function AiPromptInterface() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end"> {/* Changed to lg:grid-cols-5 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                   <div className="space-y-2">
                     <Label htmlFor="num-people" className="flex items-center gap-2 text-foreground">
                       <Users className="h-5 w-5 text-primary" />
@@ -629,7 +622,7 @@ export function AiPromptInterface() {
                     </Select>
                   </div>
 
-                  <div className="space-y-2"> {/* New Time Distance field */}
+                  <div className="space-y-2">
                     <Label htmlFor="time-distance" className="flex items-center gap-2 text-foreground">
                       <Clock4 className="h-5 w-5 text-primary" />
                        {t('timeDistanceLabel')}
@@ -653,12 +646,13 @@ export function AiPromptInterface() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="detail-level" className="flex items-center gap-2 text-foreground">
+                  <Label id="schedule-density-label" className="flex items-center gap-2 text-foreground">
                     <ListChecks className="h-5 w-5 text-primary" />
                     {t('scheduleDensityLabel')}
                   </Label>
                   <Slider
                     id="detail-level"
+                    aria-labelledby="schedule-density-label"
                     min={0}
                     max={3}
                     step={1}
