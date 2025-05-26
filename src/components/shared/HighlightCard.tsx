@@ -3,10 +3,10 @@
 
 import type { LocalHighlight } from '@/services/localHighlights';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui/card'; // Removed CardHeader, CardContent, CardFooter
 import { ExternalLink, Instagram, PlayCircle, Youtube, Film, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import clsx from 'clsx';
 
 // Helper for platform icon
@@ -24,7 +24,7 @@ interface HighlightCardProps {
   highlight: LocalHighlight;
   isObserved: boolean; 
   isGridView: boolean;
-  isInitiallyVisible?: boolean; // For eager loading first few items in feed
+  isInitiallyVisible?: boolean;
 }
 
 const cardTranslations = {
@@ -41,7 +41,7 @@ const cardTranslations = {
 
 export function HighlightCard({ highlight, isObserved, isGridView, isInitiallyVisible = false }: HighlightCardProps) {
   const { selectedLanguage } = useLanguage();
-  const [playerVisible, setPlayerVisible] = useState(isInitiallyVisible && !isGridView); // Autoload for feed view if initially visible
+  const [playerVisible, setPlayerVisible] = useState(isInitiallyVisible && !isGridView);
   const [isMounted, setIsMounted] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -54,11 +54,11 @@ export function HighlightCard({ highlight, isObserved, isGridView, isInitiallyVi
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
-            setPlayerVisible(true);
+            setPlayerVisible(true); // Load iframe when card is intersecting
             observer.unobserve(entry.target);
           }
         },
-        { threshold: 0.1 } // Load when 10% visible
+        { threshold: 0.1 } 
       );
       observer.observe(cardRef.current);
       return () => observer.disconnect();
@@ -68,8 +68,9 @@ export function HighlightCard({ highlight, isObserved, isGridView, isInitiallyVi
 
   const t = (fieldKey: keyof typeof cardTranslations): string => {
     if (!isMounted) return cardTranslations[fieldKey]?.['en'] || String(fieldKey);
+    const langToUse = selectedLanguage;
     // @ts-ignore
-    return cardTranslations[fieldKey]?.[selectedLanguage] || cardTranslations[fieldKey]?.['en'] || String(fieldKey);
+    return cardTranslations[fieldKey]?.[langToUse] || cardTranslations[fieldKey]?.['en'] || String(fieldKey);
   };
 
   const handlePlaceholderClick = () => {
@@ -82,10 +83,11 @@ export function HighlightCard({ highlight, isObserved, isGridView, isInitiallyVi
     <iframe
         src={highlight.embedUrl}
         title={highlight.title}
-        className="w-full h-full absolute top-0 left-0 border-0"
+        className="w-full h-full absolute top-0 left-0 border-0 max-w-none" // Ensure it fills the relative parent
         allow="autoplay; encrypted-media; picture-in-picture"
         allowFullScreen
-        loading="lazy" // Still useful for browsers that support it
+        loading="lazy"
+        referrerPolicy="no-referrer" // Recommended for embeds
       ></iframe>
   );
 
@@ -102,7 +104,6 @@ export function HighlightCard({ highlight, isObserved, isGridView, isInitiallyVi
 
 
   if (!isMounted) {
-    // Basic skeleton for SSR and initial mount, especially for grid view
     if (isGridView) {
       return (
         <Card className="aspect-[9/16] w-full rounded-lg shadow-lg overflow-hidden bg-muted animate-pulse">
@@ -114,7 +115,6 @@ export function HighlightCard({ highlight, isObserved, isGridView, isInitiallyVi
         </Card>
       );
     }
-    // For feed view, a simple full-height placeholder
     return <div ref={cardRef} className="w-full h-full relative bg-black/10 animate-pulse" />;
   }
 
@@ -145,7 +145,7 @@ export function HighlightCard({ highlight, isObserved, isGridView, isInitiallyVi
                 "w-full backdrop-blur-sm text-xs",
                 playerVisible ? "bg-white/20 hover:bg-white/30 border-white/30 text-white" : "bg-background/70 hover:bg-accent/10 border-border text-foreground"
               )}
-              onClick={(e) => { // Prevent card click when button is clicked
+              onClick={(e) => { 
                 e.stopPropagation(); 
               }} 
             >
@@ -163,11 +163,11 @@ export function HighlightCard({ highlight, isObserved, isGridView, isInitiallyVi
   // Full-screen feed view (mobile)
   return (
     <div ref={cardRef} className="w-full h-full relative bg-black overflow-hidden shadow-xl rounded-none">
-      {!playerVisible ? 
+      {(!playerVisible && !isInitiallyVisible) ? 
         renderPlaceholder(t('loadingVideo'))
         : renderIframe()
       }
-      {playerVisible && ( // Only show overlay if player is visible (or supposed to be)
+      { (playerVisible || isInitiallyVisible) && ( 
         <div className="absolute bottom-0 left-0 right-0 p-4 z-10 bg-gradient-to-t from-black/80 via-black/50 to-transparent space-y-2">
           <h2 className="text-lg font-bold text-white drop-shadow-md truncate">{highlight.title}</h2>
           {(highlight.username || highlight.location) && (

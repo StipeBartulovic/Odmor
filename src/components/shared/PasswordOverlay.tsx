@@ -2,13 +2,13 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useState, useEffect as useReactEffect } from 'react'; // Renamed to avoid conflict
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { KeyRound, Mail, Newspaper } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import { useLanguage } from '@/contexts/LanguageContext'; // Assuming useLanguage is needed for translations
+import { useLanguage } from '@/contexts/LanguageContext'; 
 
 interface PasswordOverlayProps {
   onAuthenticate: (password: string) => boolean;
@@ -79,12 +79,12 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
   const [email, setEmail] = useState('');
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [error, setError] = useState('');
-  const { selectedLanguage } = useLanguage(); // Get current language
+  const { selectedLanguage } = useLanguage(); 
   const [isMounted, setIsMounted] = useState(false);
 
-  useState(() => {
+  useReactEffect(() => { // Changed from useState to useReactEffect
     setIsMounted(true);
-  });
+  }, []);
 
   const t = (fieldKey: keyof typeof overlayTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
@@ -95,17 +95,15 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setError(''); // Clear previous error
+    setError(''); 
     
     if (onAuthenticate(password)) {
-      // Parent component will handle hiding this overlay by re-rendering
       if (newsletterOptIn) {
         console.log(`Email ${email || 'not provided'} opted into newsletter.`);
-        // Here you would typically send the email to your newsletter service
       }
     } else {
       setError(t('incorrectPasswordError'));
-      setPassword(''); // Clear password field on error
+      setPassword(''); 
     }
   };
 
@@ -132,7 +130,7 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="text-lg h-12 rounded-lg shadow-sm focus:ring-primary focus:border-primary"
-              aria-label="Email"
+              aria-label={t('emailLabel')}
             />
           </div>
            <div className="space-y-2 text-left">
@@ -154,14 +152,14 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
 
           <div className="flex items-center space-x-2 text-left">
             <Checkbox 
-              id="newsletter-opt-in" 
+              id="newsletter-opt-in-checkbox" // Ensure this ID is unique and used by the label
               checked={newsletterOptIn}
               onCheckedChange={(checked) => setNewsletterOptIn(checked as boolean)}
-              aria-labelledby="newsletter-label"
+              aria-labelledby="newsletter-label-text"
             />
             <Label 
-              htmlFor="newsletter-opt-in" 
-              id="newsletter-label"
+              htmlFor="newsletter-opt-in-checkbox" // This must match the Checkbox ID
+              id="newsletter-label-text" // This ID is for aria-labelledby
               className="text-sm font-normal text-muted-foreground cursor-pointer flex items-center"
             >
               <Newspaper className="mr-2 h-4 w-4 text-primary/80" /> 
@@ -178,4 +176,3 @@ export function PasswordOverlay({ onAuthenticate }: PasswordOverlayProps) {
     </div>
   );
 }
-
