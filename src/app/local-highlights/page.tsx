@@ -1,12 +1,12 @@
 // src/app/local-highlights/page.tsx
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { HighlightCard } from '@/components/shared/HighlightCard';
 import type { LocalHighlight } from '@/services/localHighlights';
 import { getLocalHighlights } from '@/services/localHighlights';
-import { Loader2, ArrowLeft, VideoOff } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, VideoOff } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -61,14 +61,18 @@ const pageTranslations = {
     fr: 'Tous droits réservés.', 
     es: 'Todos los derechos reservados.' 
   },
+  previousButton: {
+    en: 'Previous', it: 'Precedente', de: 'Vorherige', pl: 'Poprzedni', fr: 'Précédent', es: 'Anterior'
+  },
+  nextButton: {
+    en: 'Next', it: 'Successivo', de: 'Nächste', pl: 'Następny', fr: 'Suivant', es: 'Siguiente'
+  }
 };
 
-// Helper to extract video ID from URL
 const getTikTokVideoId = (url: string): string | null => {
   try {
     const urlObj = new URL(url);
     const pathParts = urlObj.pathname.split('/');
-    // Video ID is usually the last part of the path before query params
     const videoId = pathParts.find(part => /^\d+$/.test(part));
     return videoId || null;
   } catch (e) {
@@ -76,7 +80,6 @@ const getTikTokVideoId = (url: string): string | null => {
     return null;
   }
 };
-
 
 const fallbackHighlights: LocalHighlight[] = [
   {
@@ -147,9 +150,6 @@ const fallbackHighlights: LocalHighlight[] = [
   }
 ];
 
-
-const DESKTOP_BREAKPOINT = 768; // md breakpoint in Tailwind
-
 export default function LocalHighlightsPage() {
   const router = useRouter();
   const { selectedLanguage } = useLanguage();
@@ -157,24 +157,11 @@ export default function LocalHighlightsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
-  const [observedVideoId, setObservedVideoId] = useState<string | null>(null); // For mobile feed view, which video is centered
-  const [isGridView, setIsGridView] = useState(false); // Determines if desktop grid or mobile feed
+  const [currentIndex, setCurrentIndex] = useState(0);
   
-  const feedObserverRef = useRef<IntersectionObserver | null>(null);
-  const feedVideoRefs = useRef<Map<string, HTMLElement>>(new Map()); // For mobile feed view
-
   useEffect(() => {
     setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
-
-    const handleResize = () => {
-      if (typeof window !== 'undefined') {
-        setIsGridView(window.innerWidth >= DESKTOP_BREAKPOINT);
-      }
-    };
-
-    handleResize(); // Initial check
-    window.addEventListener('resize', handleResize);
 
     async function fetchHighlights() {
       setIsLoading(true);
@@ -192,51 +179,7 @@ export default function LocalHighlightsPage() {
       setIsLoading(false);
     }
     fetchHighlights();
-    
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const handleFeedIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
-    if (isGridView) return; 
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        setObservedVideoId(entry.target.id);
-      }
-    });
-  }, [isGridView]);
-
-  useEffect(() => {
-    if (isGridView || highlights.length === 0 || typeof window === 'undefined' || !isMounted) {
-      if (feedObserverRef.current) {
-        feedObserverRef.current.disconnect();
-      }
-      return;
-    }
-
-    // This observer is for the mobile feed view, determining which full-screen video is "active"
-    feedObserverRef.current = new IntersectionObserver(handleFeedIntersection, {
-      root: null, 
-      rootMargin: '0px',
-      threshold: 0.75, // When 75% of the item is visible
-    });
-
-    feedVideoRefs.current.clear(); // Clear old refs
-    highlights.forEach(highlight => {
-      const videoEl = document.getElementById(highlight.id);
-      if (videoEl) {
-        feedVideoRefs.current.set(highlight.id, videoEl);
-        feedObserverRef.current?.observe(videoEl);
-      }
-    });
-    
-
-    return () => {
-      if (feedObserverRef.current) {
-        feedObserverRef.current.disconnect();
-      }
-      feedVideoRefs.current.clear();
-    };
-  }, [highlights, handleFeedIntersection, isGridView, isMounted]);
 
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
@@ -254,6 +197,16 @@ export default function LocalHighlightsPage() {
       </div>
     </footer>
   );
+
+  const handleNext = () => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % highlights.length);
+  };
+
+  const handlePrevious = () => {
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + highlights.length) % highlights.length);
+  };
+
+  const currentHighlight = highlights[currentIndex];
 
   if (!isMounted || currentYear === null) {
      return (
@@ -273,47 +226,54 @@ export default function LocalHighlightsPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
-      <main className={clsx(
-        "flex-grow",
-        !isGridView && "overflow-y-auto snap-y snap-mandatory h-[calc(100vh-var(--header-height,88px)-var(--footer-height,76px))]", // Assuming header and footer heights for calc
-        isGridView && "container mx-auto px-4 py-8" 
-      )}>
-        <div className={clsx("mb-8", isGridView && "container mx-auto px-4 pt-4", !isGridView && "px-4 pt-4 sticky top-0 bg-background z-20")}>
+      <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center">
+        <div className="w-full mb-4">
            <Button variant="outline" onClick={() => router.push('/')} className="rounded-lg shadow-sm">
              <ArrowLeft className="mr-2 h-5 w-5" />
              {t('goBackButton')}
            </Button>
-         </div>
+        </div>
 
         {isLoading ? (
-          <div className={clsx("flex flex-col items-center justify-center", isGridView ? "py-10" : "h-full snap-start")}>
+          <div className="flex flex-col items-center justify-center flex-grow py-10">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
           </div>
-        ) : highlights.length > 0 ? (
-          <div className={clsx(
-            isGridView && "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6"
-          )}>
-            {highlights.map((highlight, index) => (
-              <section 
-                key={highlight.id}
-                id={highlight.id} // Used by feedObserverRef for feed view
-                // ref is handled internally by HighlightCard if needed for its own observer
-                className={clsx(
-                  !isGridView && "h-full w-full flex items-center justify-center snap-start relative"
-                )}
+        ) : highlights.length > 0 && currentHighlight ? (
+          <div className="w-full max-w-2xl flex flex-col items-center">
+            <div className="w-full aspect-[9/16] sm:aspect-video rounded-lg shadow-xl overflow-hidden mb-6">
+              <HighlightCard 
+                highlight={currentHighlight}
+              />
+            </div>
+            <div className="flex justify-between w-full max-w-xs sm:max-w-sm items-center">
+              <Button 
+                variant="outline" 
+                onClick={handlePrevious} 
+                disabled={highlights.length <= 1}
+                className="rounded-lg shadow-sm"
+                aria-label={t('previousButton')}
               >
-                <HighlightCard 
-                  highlight={highlight} 
-                  isObserved={observedVideoId === highlight.id && !isGridView}
-                  isGridView={isGridView}
-                  isInitiallyVisible={!isGridView && index < 1} // Eager load only the first video's iframe for mobile feed
-                />
-              </section>
-            ))}
+                <ArrowLeft className="mr-2 h-5 w-5" />
+                {t('previousButton')}
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {currentIndex + 1} / {highlights.length}
+              </span>
+              <Button 
+                variant="outline" 
+                onClick={handleNext} 
+                disabled={highlights.length <= 1}
+                className="rounded-lg shadow-sm"
+                aria-label={t('nextButton')}
+              >
+                {t('nextButton')}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className={clsx("flex flex-col items-center justify-center text-center p-4", isGridView ? "py-10" : "h-full snap-start")}>
+          <div className="flex flex-col items-center justify-center text-center flex-grow py-10">
             <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
             <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
           </div>
@@ -323,49 +283,3 @@ export default function LocalHighlightsPage() {
     </div>
   );
 }
-// TODO: Define --header-height and --footer-height in globals.css if using calc() for main height, or adjust logic.
-// Example: In globals.css
-// :root {
-//   --header-height: 88px; /* Adjust based on your actual header height */
-//   --footer-height: 76px; /* Adjust based on your actual footer height */
-// }
-// This is just an example, you might need to get these dynamically or set them based on your layout.
-// For now, h-[calc(100vh-var(--header-height,88px)-var(--footer-height,76px))] is a placeholder idea for mobile full height.
-// A simpler h-screen on the video sections might be enough if the main container scrolls.
-// Let's refine the main container height for mobile:
-// The snap-y container should be the one that's full viewport height minus header/footer.
-// Then each section inside it is h-full.
-// Or, sections are h-screen and the main container just allows overflow.
-// The original was: `!isGridView && "overflow-y-auto snap-y snap-mandatory"` on main, and `!isGridView && "h-screen ..."` on section. This should work.
-// The issue with height calculation is complex if header/footer are sticky.
-// For now, `h-full` on the section within a snap container that takes up the remaining space should be okay.
-// The page itself `min-h-screen`, `AppHeader` sticky. `main` needs `flex-grow`.
-// If `main` has `overflow-y-auto snap-y snap-mandatory`, then child `section` should be `h-screen`.
-// Let's revert `main`'s height calculation for mobile and ensure `section` is `h-screen`.
-// This will be `!isGridView && "h-screen w-full flex items-center justify-center snap-start relative"` for sections
-// and `!isGridView && "overflow-y-auto snap-y snap-mandatory"` for main.
-// The `h-[calc(...)]` was an overcomplication.
-
-// Simpler main for mobile:
-// className={clsx(
-//   "flex-grow",
-//   !isGridView && "overflow-y-auto snap-y snap-mandatory",
-//   isGridView && "container mx-auto px-4 py-8"
-// )}
-// And sections:
-// className={clsx(
-//   !isGridView && "h-screen w-full flex items-center justify-center snap-start relative"
-// )}
-// This seems more robust. The go back button styling needs adjustment for mobile sticky.
-// For the sticky back button on mobile:
-// The parent of the button needs to be relative or the main scroll container.
-// <div className={clsx("mb-8", isGridView && "container mx-auto px-4 pt-4", !isGridView && "px-4 pt-4 sticky top-0 bg-background z-20")}>
-// This sticky top-0 within a scrolling container won't work as expected. It should be outside the map.
-// A better approach for the go back button might be to have it inside the AppHeader, or handle its position differently based on view.
-// For now, I'll keep it simple and assume it scrolls with content on mobile, and is at top for grid.
-// The previous code did this: `!isGridView && "overflow-y-auto snap-y snap-mandatory"` on `main`, and `!isGridView && "h-screen ..."` on `section`. This works.
-
-// The core change is `isInitiallyVisible={!isGridView && index < 1}`
-// from `index < 2`.
-
-    
