@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-'use client'; // Required for useEffect and useLanguage
+'use client'; 
 
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
@@ -8,11 +8,9 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/shared/ThemeProvider';
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const geistSans = GeistSans;
-
-// Static metadata export removed as this is a client component.
-// Title and description are set dynamically in AppContent.
 
 const layoutTranslations = {
   title: {
@@ -33,16 +31,26 @@ const layoutTranslations = {
   }
 };
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    },
+  },
+});
+
 function AppContent({ children }: { children: ReactNode }) {
   const { selectedLanguage } = useLanguage();
 
   useEffect(() => {
-    document.title = layoutTranslations.title[selectedLanguage as keyof typeof layoutTranslations.title] || layoutTranslations.title.en;
+    const titleKey = selectedLanguage as keyof typeof layoutTranslations.title;
+    const descriptionKey = selectedLanguage as keyof typeof layoutTranslations.description;
+
+    document.title = layoutTranslations.title[titleKey] || layoutTranslations.title.en;
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', layoutTranslations.description[selectedLanguage as keyof typeof layoutTranslations.description] || layoutTranslations.description.en);
+      metaDescription.setAttribute('content', layoutTranslations.description[descriptionKey] || layoutTranslations.description.en);
     }
-    // Update html lang attribute
     document.documentElement.lang = selectedLanguage;
   }, [selectedLanguage]);
 
@@ -55,24 +63,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // The lang attribute will be updated by AppContent's useEffect
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <LanguageProvider>
-            <AppContent>
-              {children}
-            </AppContent>
-            <Toaster />
-          </LanguageProvider>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <LanguageProvider>
+              <AppContent>
+                {children}
+              </AppContent>
+              <Toaster />
+            </LanguageProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
       </body>
     </html>
   );
 }
-

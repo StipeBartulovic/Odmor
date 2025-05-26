@@ -1,8 +1,8 @@
 // src/app/local-highlights/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import Head from 'next/head'; // For preloading
+import { useEffect, useState, useCallback, memo } from 'react';
+import Head from 'next/head';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { HighlightCard } from '@/components/shared/HighlightCard';
 import type { LocalHighlight } from '@/services/localHighlights';
@@ -11,6 +11,7 @@ import { Loader2, ArrowLeft, ArrowRight, VideoOff, Download } from 'lucide-react
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 
 const pageTranslations = {
@@ -98,9 +99,10 @@ const getTikTokVideoId = (url: string): string | null => {
   }
 };
 
+// Reduced fallback highlights
 const initialFallbackHighlights: LocalHighlight[] = [
   {
-    id: 'tiktok-cosinessandadventures',
+    id: 'fallback-tiktok-cosinessandadventures',
     title: 'Adventures in Croatia by @cosinessandadventures',
     platform: 'TikTok',
     embedUrl: 'https://www.tiktok.com/embed/v2/7388936115308268833', 
@@ -109,170 +111,116 @@ const initialFallbackHighlights: LocalHighlight[] = [
     description: 'Exploring the natural beauty and adventures in Croatia.',
     category: 'travel',
     location: 'Croatia',
-  },
-   {
-    id: 'tiktok-emigrantochka',
-    title: 'Travel Moments by @emigrantochka',
-    platform: 'TikTok',
-    embedUrl: 'https://www.tiktok.com/embed/v2/7411791667910511905', 
-    externalUrl: 'https://www.tiktok.com/@emigrantochka/video/7411791667910511905',
-    username: 'emigrantochka',
-    description: 'Capturing amazing travel experiences.',
-    category: 'travel',
-    location: 'Various Locations',
-  },
-  {
-    id: 'tiktok-msurinaa',
-    title: 'Croatian Scenery by @msurinaa',
-    platform: 'TikTok',
-    embedUrl: 'https://www.tiktok.com/embed/v2/7499780431143914774', 
-    externalUrl: 'https://www.tiktok.com/@msurinaa/video/7499780431143914774',
-    username: 'msurinaa',
-    description: 'Beautiful views from Croatia.',
-    category: 'scenery',
-    location: 'Croatia',
-  },
-  {
-    id: 'tiktok-raulrabuzz',
-    title: 'CR7 Goal by @raulrabuzz',
-    platform: 'TikTok',
-    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@raulrabuzz/video/7505876094474521879") || 'invalid_id_1'}`,
-    externalUrl: 'https://www.tiktok.com/@raulrabuzz/video/7505876094474521879',
-    username: 'raulrabuzz',
-    description: 'Napokon životna želja #CR7',
-    category: 'sports',
-    location: 'Stadium',
-  },
-  {
-    id: 'tiktok-hopppee1',
-    title: 'Funny Moment by @hopppee1',
-    platform: 'TikTok',
-    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@hopppee1/video/7506127902539271430") || 'invalid_id_2'}`,
-    externalUrl: 'https://www.tiktok.com/@hopppee1/video/7506127902539271430',
-    username: 'hopppee1',
-    description: 'Osigurala sam sebi mjesto za pakao',
-    category: 'comedy',
-    location: 'Unknown',
-  },
-  {
-    id: 'tiktok-jugoslavija88',
-    title: 'Music by @jugoslavija88',
-    platform: 'TikTok',
-    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@jugoslavija88/video/7480657307068599574") || 'invalid_id_3'}`,
-    externalUrl: 'https://www.tiktok.com/@jugoslavija88/video/7480657307068599574',
-    username: 'jugoslavija88',
-    description: '#jugoslavija #halidmuslimovic',
-    category: 'music',
-    location: 'Nostalgia',
   }
-].filter(h => h.embedUrl && !h.embedUrl.includes('invalid_id'));
-
+];
 
 const HIGHLIGHTS_PAGE_SIZE = 5;
+
+const PageFooter = memo(({ currentYear, t }: { currentYear: number; t: (key: keyof typeof pageTranslations) => string }) => (
+  <footer className="py-8 bg-muted text-center">
+    <div className="container mx-auto px-4">
+      <p className="text-sm text-muted-foreground">
+        &copy; {currentYear} odmarAI. {t('footerRights')}
+      </p>
+    </div>
+  </footer>
+));
+PageFooter.displayName = 'PageFooter';
+
 
 export default function LocalHighlightsPage() {
   const router = useRouter();
   const { selectedLanguage } = useLanguage();
-  const [highlights, setHighlights] = useState<LocalHighlight[]>([]);
-  const [isLoadingInitial, setIsLoadingInitial] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
+  
+  const [allFetchedHighlights, setAllFetchedHighlights] = useState<LocalHighlight[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [lastFetchedDoc, setLastFetchedDoc] = useState<QueryDocumentSnapshot<unknown> | null>(null);
-  const [hasMoreHighlights, setHasMoreHighlights] = useState(true);
-  
-  const fetchAndSetHighlights = useCallback(async (lastDocForQuery: QueryDocumentSnapshot<unknown> | null = null) => {
-    if (lastDocForQuery === null) {
-      setIsLoadingInitial(true);
-    } else {
-      setIsLoadingMore(true);
-    }
-  
-    try {
-      const { highlights: fetchedData, newLastDoc } = await getLocalHighlights(HIGHLIGHTS_PAGE_SIZE, lastDocForQuery);
-      
-      setHighlights(prevHighlights => {
-        let combinedHighlights: LocalHighlight[];
-        if (lastDocForQuery === null) { // Initial fetch
-          const fallbackToAdd = initialFallbackHighlights.filter(fb => !fetchedData.find(fh => fh.id === fb.id));
-          combinedHighlights = [...fetchedData, ...fallbackToAdd];
-        } else { // Loading more
-          combinedHighlights = [...prevHighlights, ...fetchedData];
-        }
-        return Array.from(new Map(combinedHighlights.map(item => [item.id, item])).values())
-                           .filter(h => h.embedUrl && !h.embedUrl.includes('null'));
-      });
-      
-      setLastFetchedDoc(newLastDoc);
-      setHasMoreHighlights(fetchedData.length === HIGHLIGHTS_PAGE_SIZE);
-  
-    } catch (error) {
-      console.error("Error in fetchAndSetHighlights, using only fallback if initial:", error);
-      if (lastDocForQuery === null) {
-        setHighlights(initialFallbackHighlights.filter(h => h.embedUrl && !h.embedUrl.includes('null')));
-        setHasMoreHighlights(false); 
-      }
-    } finally {
-      if (lastDocForQuery === null) {
-        setIsLoadingInitial(false);
-      } else {
-        setIsLoadingMore(false);
-      }
-    }
-  }, []); // Removed `highlights` from dependency array
+  const [currentLastDoc, setCurrentLastDoc] = useState<QueryDocumentSnapshot<unknown> | null>(null);
+  const [hasMoreToFetch, setHasMoreToFetch] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
-    fetchAndSetHighlights(null); // Initial fetch
-  }, [fetchAndSetHighlights]); 
+  }, []);
 
-  const t = (fieldKey: keyof typeof pageTranslations): string => {
+  const {
+    data: initialQueryData,
+    isLoading: isLoadingInitialQuery,
+    isError: isErrorInitialQuery,
+  } = useQuery({
+    queryKey: ['localHighlights', 'initial'],
+    queryFn: () => getLocalHighlights(HIGHLIGHTS_PAGE_SIZE, null),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: isMounted, // Only run query when mounted
+  });
+
+  useEffect(() => {
+    if (initialQueryData) {
+      setAllFetchedHighlights(initialQueryData.highlights);
+      setCurrentLastDoc(initialQueryData.newLastDoc);
+      setHasMoreToFetch(initialQueryData.highlights.length === HIGHLIGHTS_PAGE_SIZE && !!initialQueryData.newLastDoc);
+    }
+  }, [initialQueryData]);
+
+  const displayedHighlights = useMemo(() => {
+    // Combine fetched highlights with fallbacks, ensuring fallbacks are only added if no fetched data or to supplement
+    let combined: LocalHighlight[];
+    if (allFetchedHighlights.length === 0 && !isLoadingInitialQuery) {
+      combined = [...initialFallbackHighlights];
+    } else {
+      // Ensure fallbacks are unique if they are also fetched
+      const fallbackToAdd = initialFallbackHighlights.filter(fb => !allFetchedHighlights.find(fh => fh.id === fb.id));
+      combined = [...allFetchedHighlights, ...fallbackToAdd];
+    }
+    return Array.from(new Map(combined.map(item => [item.id, item])).values())
+      .filter(h => h.embedUrl && !h.embedUrl.includes('null'));
+  }, [allFetchedHighlights, isLoadingInitialQuery]);
+
+
+  const t = useCallback((fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
-    // @ts-ignore
-    const translation = pageTranslations[fieldKey]?.[langToUse] || pageTranslations[fieldKey]?.['en'];
+    const translation = pageTranslations[fieldKey]?.[langToUse as keyof typeof pageTranslations[keyof typeof pageTranslations]] || pageTranslations[fieldKey]?.['en'];
     return typeof translation === 'string' ? translation : String(fieldKey);
-  };
+  }, [isMounted, selectedLanguage]);
   
-  const PageFooter = () => (
-    <footer className="py-8 bg-muted text-center">
-      <div className="container mx-auto px-4">
-        <p className="text-sm text-muted-foreground">
-          &copy; {currentYear} odmarAI. {t('footerRights')}
-        </p>
-      </div>
-    </footer>
-  );
+  const handleLoadMore = useCallback(async () => {
+    if (!hasMoreToFetch || isLoadingMore || !currentLastDoc) return;
+    setIsLoadingMore(true);
+    try {
+      const { highlights: newHighlights, newLastDoc } = await getLocalHighlights(HIGHLIGHTS_PAGE_SIZE, currentLastDoc);
+      setAllFetchedHighlights(prev => [...prev, ...newHighlights]);
+      setCurrentLastDoc(newLastDoc);
+      setHasMoreToFetch(newHighlights.length === HIGHLIGHTS_PAGE_SIZE && !!newLastDoc);
+    } catch (error) {
+      console.error("Error loading more highlights:", error);
+      setHasMoreToFetch(false); // Stop trying if there's an error
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [hasMoreToFetch, isLoadingMore, currentLastDoc]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setCurrentIndex((prevIndex) => {
       const newIndex = prevIndex + 1;
-      if (newIndex >= highlights.length && hasMoreHighlights && !isLoadingMore) {
-        handleLoadMore(); 
-        return prevIndex; 
+      if (newIndex >= displayedHighlights.length && hasMoreToFetch && !isLoadingMore) {
+        handleLoadMore(); // Attempt to load more if at the end and more might be available
+        return prevIndex; // Stay on current until more are loaded
       }
-      // If no more to load or already loading, wrap around or stay
-      return newIndex < highlights.length ? newIndex : prevIndex;
+      return newIndex < displayedHighlights.length ? newIndex : prevIndex;
     });
-  };
+  }, [displayedHighlights.length, hasMoreToFetch, isLoadingMore, handleLoadMore]);
 
-  const handlePrevious = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + highlights.length) % highlights.length);
-  };
-
-  const handleLoadMore = () => {
-    if (hasMoreHighlights && !isLoadingMore) {
-      fetchAndSetHighlights(lastFetchedDoc);
-    }
-  };
-
-  const currentHighlight = highlights[currentIndex];
-  // Preload the embedUrl of the very first highlight if available
-  const firstHighlightEmbedUrl = highlights.length > 0 ? highlights[0].embedUrl : (initialFallbackHighlights.length > 0 ? initialFallbackHighlights[0].embedUrl : null);
+  const handlePrevious = useCallback(() => {
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + displayedHighlights.length) % displayedHighlights.length);
+  }, [displayedHighlights.length]);
 
 
-  if (!isMounted || currentYear === null) {
+  const currentHighlight = displayedHighlights[currentIndex];
+  const firstHighlightEmbedUrl = displayedHighlights.length > 0 ? displayedHighlights[0].embedUrl : (initialFallbackHighlights.length > 0 ? initialFallbackHighlights[0].embedUrl : null);
+
+  if (!isMounted || currentYear === null || (isLoadingInitialQuery && allFetchedHighlights.length === 0 && displayedHighlights.length === 0) ) {
      return (
       <div className="flex flex-col min-h-screen bg-background">
         <AppHeader />
@@ -282,7 +230,7 @@ export default function LocalHighlightsPage() {
             <p className="text-xl text-muted-foreground mt-4">{t('loadingInitial')}</p>
           </div>
         </main>
-        {isMounted && currentYear !== null && <PageFooter />}
+        {isMounted && currentYear !== null && <PageFooter currentYear={currentYear} t={t} />}
       </div>
     );
   }
@@ -303,23 +251,26 @@ export default function LocalHighlightsPage() {
            </Button>
         </div>
 
-        {isLoadingInitial ? (
-          <div className="flex flex-col items-center justify-center flex-grow py-10">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-lg text-muted-foreground">{t('loadingInitial')}</p>
-          </div>
-        ) : highlights.length > 0 && currentHighlight ? (
+        {isErrorInitialQuery && (
+             <div className="flex flex-col items-center justify-center text-center flex-grow py-10">
+                <VideoOff className="h-16 w-16 text-destructive mb-4" />
+                <p className="text-xl text-muted-foreground">Error loading highlights.</p>
+            </div>
+        )}
+
+        {!isErrorInitialQuery && displayedHighlights.length > 0 && currentHighlight ? (
           <div className="w-full max-w-2xl flex flex-col items-center">
-            <div className="w-full aspect-[9/16] sm:aspect-video rounded-lg shadow-xl overflow-hidden mb-6">
+            <div className="w-full aspect-[9/16] sm:aspect-video rounded-lg shadow-xl overflow-hidden mb-6 bg-muted">
               <HighlightCard 
                 highlight={currentHighlight}
+                isInitiallyVisible={currentIndex === 0} // Only first card is initially visible for eager load
               />
             </div>
             <div className="flex justify-between w-full max-w-xs sm:max-w-sm items-center mb-6">
               <Button 
                 variant="outline" 
                 onClick={handlePrevious} 
-                disabled={highlights.length <= 1 && !hasMoreHighlights}
+                disabled={displayedHighlights.length <= 1 && !hasMoreToFetch}
                 className="rounded-lg shadow-sm"
                 aria-label={t('previousButton')}
               >
@@ -327,12 +278,14 @@ export default function LocalHighlightsPage() {
                 {t('previousButton')}
               </Button>
               <span className="text-sm text-muted-foreground">
-                {currentIndex + 1} / {highlights.length}
+                {currentIndex + 1} / {displayedHighlights.length}
+                {hasMoreToFetch && !isLoadingMore && "+"}
+                {isLoadingMore && <Loader2 className="ml-1 h-4 w-4 animate-spin inline-block"/>}
               </span>
               <Button 
                 variant="outline" 
                 onClick={handleNext} 
-                disabled={!hasMoreHighlights && currentIndex === highlights.length -1 }
+                disabled={!hasMoreToFetch && currentIndex === displayedHighlights.length -1 }
                 className="rounded-lg shadow-sm"
                 aria-label={t('nextButton')}
               >
@@ -340,7 +293,7 @@ export default function LocalHighlightsPage() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
-             {hasMoreHighlights && (
+             {hasMoreToFetch && (
               <Button 
                 onClick={handleLoadMore} 
                 disabled={isLoadingMore}
@@ -362,14 +315,15 @@ export default function LocalHighlightsPage() {
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center flex-grow py-10">
-            <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
-            <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
-          </div>
+          !isLoadingInitialQuery && !isErrorInitialQuery && ( // Only show "no highlights" if not loading and no error
+            <div className="flex flex-col items-center justify-center text-center flex-grow py-10">
+              <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
+              <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
+            </div>
+          )
         )}
       </main>
-      {isMounted && currentYear !== null && <PageFooter />}
+      {isMounted && currentYear !== null && <PageFooter currentYear={currentYear} t={t} />}
     </div>
   );
 }
-
