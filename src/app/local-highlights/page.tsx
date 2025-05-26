@@ -1,7 +1,8 @@
+
 // src/app/local-highlights/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback, memo, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Head from 'next/head';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { HighlightCard } from '@/components/shared/HighlightCard';
@@ -87,19 +88,6 @@ const pageTranslations = {
   }
 };
 
-const getTikTokVideoId = (url: string): string | null => {
-  try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
-    const videoId = pathParts.find(part => /^\d+$/.test(part));
-    return videoId || null;
-  } catch (e) {
-    console.error("Error parsing TikTok URL:", e);
-    return null;
-  }
-};
-
-// Reduced fallback highlights
 const initialFallbackHighlights: LocalHighlight[] = [
   {
     id: 'fallback-tiktok-cosinessandadventures',
@@ -109,6 +97,28 @@ const initialFallbackHighlights: LocalHighlight[] = [
     externalUrl: 'https://www.tiktok.com/@cosinessandadventures/video/7388936115308268833',
     username: 'cosinessandadventures',
     description: 'Exploring the natural beauty and adventures in Croatia.',
+    category: 'travel',
+    location: 'Croatia',
+  },
+  {
+    id: 'fallback-tiktok-msurinaa',
+    title: 'Croatian Coastal Charm by @msurinaa',
+    platform: 'TikTok',
+    embedUrl: 'https://www.tiktok.com/embed/v2/7499780431143914774',
+    externalUrl: 'https://www.tiktok.com/@msurinaa/video/7499780431143914774',
+    username: 'msurinaa',
+    description: 'Beautiful views from the Croatian coast.',
+    category: 'travel',
+    location: 'Croatia',
+  },
+  {
+    id: 'fallback-tiktok-emigrantochka',
+    title: 'Travel Moments by @emigrantochka',
+    platform: 'TikTok',
+    embedUrl: 'https://www.tiktok.com/embed/v2/7411791667910511905',
+    externalUrl: 'https://www.tiktok.com/@emigrantochka/video/7411791667910511905',
+    username: 'emigrantochka',
+    description: 'Capturing travel experiences.',
     category: 'travel',
     location: 'Croatia',
   }
@@ -327,3 +337,4 @@ export default function LocalHighlightsPage() {
     </div>
   );
 }
+
