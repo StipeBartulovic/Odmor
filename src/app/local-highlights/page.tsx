@@ -2,15 +2,16 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Head from 'next/head'; // For preloading
 import { AppHeader } from '@/components/shared/AppHeader';
 import { HighlightCard } from '@/components/shared/HighlightCard';
 import type { LocalHighlight } from '@/services/localHighlights';
 import { getLocalHighlights } from '@/services/localHighlights';
-import { Loader2, ArrowLeft, ArrowRight, VideoOff } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, VideoOff, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import clsx from 'clsx';
+import type { QueryDocumentSnapshot } from 'firebase/firestore';
 
 const pageTranslations = {
   title: {
@@ -29,13 +30,21 @@ const pageTranslations = {
     fr: 'Découvrez des moments inspirants et des activités partagées par d\'autres.',
     es: 'Descubre momentos inspiradores y actividades compartidas por otros.',
   },
-  loading: {
+  loadingInitial: {
     en: 'Loading highlights...',
     it: 'Caricamento attrazioni...',
     de: 'Lade Highlights...',
     pl: 'Ładowanie atrakcji...',
     fr: 'Chargement des points forts...',
     es: 'Cargando destacados...',
+  },
+  loadingMore: {
+    en: 'Loading more...',
+    it: 'Caricamento altri...',
+    de: 'Lade mehr...',
+    pl: 'Ładowanie więcej...',
+    fr: 'Chargement de plus...',
+    es: 'Cargando más...',
   },
   noHighlights: {
     en: 'No local highlights found at the moment. Check back soon!',
@@ -53,7 +62,7 @@ const pageTranslations = {
     fr: 'Retour', 
     es: 'Volver' 
   },
-   footerRights: { 
+  footerRights: { 
     en: 'All rights reserved.', 
     it: 'Tutti i diritti riservati.', 
     de: 'Alle Rechte vorbehalten.', 
@@ -66,6 +75,14 @@ const pageTranslations = {
   },
   nextButton: {
     en: 'Next', it: 'Successivo', de: 'Nächste', pl: 'Następny', fr: 'Suivant', es: 'Siguiente'
+  },
+  loadMoreButton: {
+    en: 'Load More Highlights',
+    it: 'Carica Altre Attrazioni',
+    de: 'Weitere Highlights laden',
+    pl: 'Załaduj Więcej Atrakcji',
+    fr: 'Charger Plus de Points Forts',
+    es: 'Cargar Más Destacados',
   }
 };
 
@@ -81,7 +98,7 @@ const getTikTokVideoId = (url: string): string | null => {
   }
 };
 
-const fallbackHighlights: LocalHighlight[] = [
+const initialFallbackHighlights: LocalHighlight[] = [
   {
     id: 'tiktok-cosinessandadventures',
     title: 'Adventures in Croatia by @cosinessandadventures',
@@ -119,7 +136,7 @@ const fallbackHighlights: LocalHighlight[] = [
     id: 'tiktok-raulrabuzz',
     title: 'CR7 Goal by @raulrabuzz',
     platform: 'TikTok',
-    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@raulrabuzz/video/7505876094474521879")}`,
+    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@raulrabuzz/video/7505876094474521879") || 'invalid_id_1'}`,
     externalUrl: 'https://www.tiktok.com/@raulrabuzz/video/7505876094474521879',
     username: 'raulrabuzz',
     description: 'Napokon životna želja #CR7',
@@ -130,7 +147,7 @@ const fallbackHighlights: LocalHighlight[] = [
     id: 'tiktok-hopppee1',
     title: 'Funny Moment by @hopppee1',
     platform: 'TikTok',
-    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@hopppee1/video/7506127902539271430")}`,
+    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@hopppee1/video/7506127902539271430") || 'invalid_id_2'}`,
     externalUrl: 'https://www.tiktok.com/@hopppee1/video/7506127902539271430',
     username: 'hopppee1',
     description: 'Osigurala sam sebi mjesto za pakao',
@@ -141,45 +158,68 @@ const fallbackHighlights: LocalHighlight[] = [
     id: 'tiktok-jugoslavija88',
     title: 'Music by @jugoslavija88',
     platform: 'TikTok',
-    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@jugoslavija88/video/7480657307068599574")}`,
+    embedUrl: `https://www.tiktok.com/embed/v2/${getTikTokVideoId("https://www.tiktok.com/@jugoslavija88/video/7480657307068599574") || 'invalid_id_3'}`,
     externalUrl: 'https://www.tiktok.com/@jugoslavija88/video/7480657307068599574',
     username: 'jugoslavija88',
     description: '#jugoslavija #halidmuslimovic',
     category: 'music',
     location: 'Nostalgia',
   }
-];
+].filter(h => !h.embedUrl.includes('invalid_id')); // Filter out invalid ones from fallback
+
+
+const HIGHLIGHTS_PAGE_SIZE = 5;
 
 export default function LocalHighlightsPage() {
   const router = useRouter();
   const { selectedLanguage } = useLanguage();
   const [highlights, setHighlights] = useState<LocalHighlight[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [lastFetchedDoc, setLastFetchedDoc] = useState<QueryDocumentSnapshot<unknown> | null>(null);
+  const [hasMoreHighlights, setHasMoreHighlights] = useState(true);
   
+  const fetchAndSetHighlights = useCallback(async (lastDocForQuery: QueryDocumentSnapshot<unknown> | null = null) => {
+    if (lastDocForQuery === null) setIsLoadingInitial(true); else setIsLoadingMore(true);
+    
+    try {
+      const { highlights: fetchedData, newLastDoc } = await getLocalHighlights(HIGHLIGHTS_PAGE_SIZE, lastDocForQuery);
+      
+      let combinedHighlights: LocalHighlight[];
+      if (lastDocForQuery === null) { // Initial fetch
+        // Combine fetched with fallback, ensuring no duplicates from fallback if Firestore has them
+        const fallbackToAdd = initialFallbackHighlights.filter(fb => !fetchedData.find(fh => fh.id === fb.id));
+        combinedHighlights = [...fetchedData, ...fallbackToAdd];
+      } else { // Loading more
+        combinedHighlights = [...highlights, ...fetchedData];
+      }
+      
+      const uniqueHighlights = Array.from(new Map(combinedHighlights.map(item => [item.id, item])).values())
+                                 .filter(h => h.embedUrl && !h.embedUrl.includes('null')); // Filter out invalid embeds
+      
+      setHighlights(uniqueHighlights);
+      setLastFetchedDoc(newLastDoc);
+      setHasMoreHighlights(fetchedData.length === HIGHLIGHTS_PAGE_SIZE);
+
+    } catch (error) {
+      console.error("Error in fetchAndSetHighlights, using only fallback if initial:", error);
+      if (lastDocForQuery === null) {
+        setHighlights(initialFallbackHighlights.filter(h => h.embedUrl && !h.embedUrl.includes('null')));
+        setHasMoreHighlights(false); // No Firebase data, so no more to load from there
+      }
+    } finally {
+      if (lastDocForQuery === null) setIsLoadingInitial(false); else setIsLoadingMore(false);
+    }
+  }, [highlights]); // Added highlights to dependency array for combining on "load more"
+
   useEffect(() => {
     setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
-
-    async function fetchHighlights() {
-      setIsLoading(true);
-      try {
-        const fetchedHighlights = await getLocalHighlights(); 
-        const combinedHighlights = [...(fetchedHighlights && fetchedHighlights.length > 0 ? fetchedHighlights : []), ...fallbackHighlights.filter(fb => !(fetchedHighlights || []).find(fh => fh.id === fb.id))]
-                                  .filter(h => h.embedUrl && h.embedUrl.includes('tiktok.com/embed/v2/null') === false);
-        
-        const uniqueHighlights = Array.from(new Map(combinedHighlights.map(item => [item.id, item])).values());
-        setHighlights(uniqueHighlights);
-      } catch (error) {
-        console.error("Error in fetchHighlights, using only fallback:", error);
-        setHighlights(fallbackHighlights.filter(h => h.embedUrl && h.embedUrl.includes('tiktok.com/embed/v2/null') === false));
-      }
-      setIsLoading(false);
-    }
-    fetchHighlights();
-  }, []);
+    fetchAndSetHighlights(null); // Initial fetch
+  }, [fetchAndSetHighlights]); // fetchAndSetHighlights is memoized with useCallback
 
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
@@ -199,14 +239,30 @@ export default function LocalHighlightsPage() {
   );
 
   const handleNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % highlights.length);
+    setCurrentIndex((prevIndex) => {
+      const newIndex = prevIndex + 1;
+      if (newIndex >= highlights.length && hasMoreHighlights && !isLoadingMore) {
+        // If at the end and more can be loaded, trigger load more instead of wrapping
+        handleLoadMore(); 
+        return prevIndex; // Stay on current until more load
+      }
+      return newIndex % highlights.length; // Loop back if no more to load
+    });
   };
 
   const handlePrevious = () => {
     setCurrentIndex((prevIndex) => (prevIndex - 1 + highlights.length) % highlights.length);
   };
 
+  const handleLoadMore = () => {
+    if (hasMoreHighlights && !isLoadingMore) {
+      fetchAndSetHighlights(lastFetchedDoc);
+    }
+  };
+
   const currentHighlight = highlights[currentIndex];
+  const firstHighlightEmbedUrl = highlights.length > 0 ? highlights[0].embedUrl : (initialFallbackHighlights.length > 0 ? initialFallbackHighlights[0].embedUrl : null);
+
 
   if (!isMounted || currentYear === null) {
      return (
@@ -215,7 +271,7 @@ export default function LocalHighlightsPage() {
         <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto" />
-            <p className="text-xl text-muted-foreground mt-4">{t('loading')}</p>
+            <p className="text-xl text-muted-foreground mt-4">{t('loadingInitial')}</p>
           </div>
         </main>
         {isMounted && currentYear !== null && <PageFooter />}
@@ -225,6 +281,11 @@ export default function LocalHighlightsPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      {firstHighlightEmbedUrl && (
+        <Head>
+          <link rel="preload" href={firstHighlightEmbedUrl} as="document" type="text/html" />
+        </Head>
+      )}
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-8 flex flex-col items-center">
         <div className="w-full mb-4">
@@ -234,10 +295,10 @@ export default function LocalHighlightsPage() {
            </Button>
         </div>
 
-        {isLoading ? (
+        {isLoadingInitial ? (
           <div className="flex flex-col items-center justify-center flex-grow py-10">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-lg text-muted-foreground">{t('loading')}</p>
+            <p className="mt-4 text-lg text-muted-foreground">{t('loadingInitial')}</p>
           </div>
         ) : highlights.length > 0 && currentHighlight ? (
           <div className="w-full max-w-2xl flex flex-col items-center">
@@ -246,11 +307,11 @@ export default function LocalHighlightsPage() {
                 highlight={currentHighlight}
               />
             </div>
-            <div className="flex justify-between w-full max-w-xs sm:max-w-sm items-center">
+            <div className="flex justify-between w-full max-w-xs sm:max-w-sm items-center mb-6">
               <Button 
                 variant="outline" 
                 onClick={handlePrevious} 
-                disabled={highlights.length <= 1}
+                disabled={highlights.length <= 1 && !hasMoreHighlights} // Disable if only one and no more
                 className="rounded-lg shadow-sm"
                 aria-label={t('previousButton')}
               >
@@ -263,7 +324,7 @@ export default function LocalHighlightsPage() {
               <Button 
                 variant="outline" 
                 onClick={handleNext} 
-                disabled={highlights.length <= 1}
+                disabled={highlights.length <= 1 && !hasMoreHighlights && currentIndex === highlights.length -1} // Disable if last and no more
                 className="rounded-lg shadow-sm"
                 aria-label={t('nextButton')}
               >
@@ -271,6 +332,26 @@ export default function LocalHighlightsPage() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
+             {hasMoreHighlights && (
+              <Button 
+                onClick={handleLoadMore} 
+                disabled={isLoadingMore}
+                variant="secondary"
+                className="rounded-lg shadow-md mt-4"
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {t('loadingMore')}
+                  </>
+                ) : (
+                   <>
+                    <Download className="mr-2 h-5 w-5" />
+                    {t('loadMoreButton')}
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center text-center flex-grow py-10">
