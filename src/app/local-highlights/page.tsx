@@ -165,7 +165,7 @@ const initialFallbackHighlights: LocalHighlight[] = [
     category: 'music',
     location: 'Nostalgia',
   }
-].filter(h => !h.embedUrl.includes('invalid_id')); // Filter out invalid ones from fallback
+].filter(h => h.embedUrl && !h.embedUrl.includes('invalid_id'));
 
 
 const HIGHLIGHTS_PAGE_SIZE = 5;
@@ -183,43 +183,50 @@ export default function LocalHighlightsPage() {
   const [hasMoreHighlights, setHasMoreHighlights] = useState(true);
   
   const fetchAndSetHighlights = useCallback(async (lastDocForQuery: QueryDocumentSnapshot<unknown> | null = null) => {
-    if (lastDocForQuery === null) setIsLoadingInitial(true); else setIsLoadingMore(true);
-    
+    if (lastDocForQuery === null) {
+      setIsLoadingInitial(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+  
     try {
       const { highlights: fetchedData, newLastDoc } = await getLocalHighlights(HIGHLIGHTS_PAGE_SIZE, lastDocForQuery);
       
-      let combinedHighlights: LocalHighlight[];
-      if (lastDocForQuery === null) { // Initial fetch
-        // Combine fetched with fallback, ensuring no duplicates from fallback if Firestore has them
-        const fallbackToAdd = initialFallbackHighlights.filter(fb => !fetchedData.find(fh => fh.id === fb.id));
-        combinedHighlights = [...fetchedData, ...fallbackToAdd];
-      } else { // Loading more
-        combinedHighlights = [...highlights, ...fetchedData];
-      }
+      setHighlights(prevHighlights => {
+        let combinedHighlights: LocalHighlight[];
+        if (lastDocForQuery === null) { // Initial fetch
+          const fallbackToAdd = initialFallbackHighlights.filter(fb => !fetchedData.find(fh => fh.id === fb.id));
+          combinedHighlights = [...fetchedData, ...fallbackToAdd];
+        } else { // Loading more
+          combinedHighlights = [...prevHighlights, ...fetchedData];
+        }
+        return Array.from(new Map(combinedHighlights.map(item => [item.id, item])).values())
+                           .filter(h => h.embedUrl && !h.embedUrl.includes('null'));
+      });
       
-      const uniqueHighlights = Array.from(new Map(combinedHighlights.map(item => [item.id, item])).values())
-                                 .filter(h => h.embedUrl && !h.embedUrl.includes('null')); // Filter out invalid embeds
-      
-      setHighlights(uniqueHighlights);
       setLastFetchedDoc(newLastDoc);
       setHasMoreHighlights(fetchedData.length === HIGHLIGHTS_PAGE_SIZE);
-
+  
     } catch (error) {
       console.error("Error in fetchAndSetHighlights, using only fallback if initial:", error);
       if (lastDocForQuery === null) {
         setHighlights(initialFallbackHighlights.filter(h => h.embedUrl && !h.embedUrl.includes('null')));
-        setHasMoreHighlights(false); // No Firebase data, so no more to load from there
+        setHasMoreHighlights(false); 
       }
     } finally {
-      if (lastDocForQuery === null) setIsLoadingInitial(false); else setIsLoadingMore(false);
+      if (lastDocForQuery === null) {
+        setIsLoadingInitial(false);
+      } else {
+        setIsLoadingMore(false);
+      }
     }
-  }, [highlights]); // Added highlights to dependency array for combining on "load more"
+  }, []); // Removed `highlights` from dependency array
 
   useEffect(() => {
     setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
     fetchAndSetHighlights(null); // Initial fetch
-  }, [fetchAndSetHighlights]); // fetchAndSetHighlights is memoized with useCallback
+  }, [fetchAndSetHighlights]); 
 
   const t = (fieldKey: keyof typeof pageTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
@@ -242,11 +249,11 @@ export default function LocalHighlightsPage() {
     setCurrentIndex((prevIndex) => {
       const newIndex = prevIndex + 1;
       if (newIndex >= highlights.length && hasMoreHighlights && !isLoadingMore) {
-        // If at the end and more can be loaded, trigger load more instead of wrapping
         handleLoadMore(); 
-        return prevIndex; // Stay on current until more load
+        return prevIndex; 
       }
-      return newIndex % highlights.length; // Loop back if no more to load
+      // If no more to load or already loading, wrap around or stay
+      return newIndex < highlights.length ? newIndex : prevIndex;
     });
   };
 
@@ -261,6 +268,7 @@ export default function LocalHighlightsPage() {
   };
 
   const currentHighlight = highlights[currentIndex];
+  // Preload the embedUrl of the very first highlight if available
   const firstHighlightEmbedUrl = highlights.length > 0 ? highlights[0].embedUrl : (initialFallbackHighlights.length > 0 ? initialFallbackHighlights[0].embedUrl : null);
 
 
@@ -311,7 +319,7 @@ export default function LocalHighlightsPage() {
               <Button 
                 variant="outline" 
                 onClick={handlePrevious} 
-                disabled={highlights.length <= 1 && !hasMoreHighlights} // Disable if only one and no more
+                disabled={highlights.length <= 1 && !hasMoreHighlights}
                 className="rounded-lg shadow-sm"
                 aria-label={t('previousButton')}
               >
@@ -324,7 +332,7 @@ export default function LocalHighlightsPage() {
               <Button 
                 variant="outline" 
                 onClick={handleNext} 
-                disabled={highlights.length <= 1 && !hasMoreHighlights && currentIndex === highlights.length -1} // Disable if last and no more
+                disabled={!hasMoreHighlights && currentIndex === highlights.length -1 }
                 className="rounded-lg shadow-sm"
                 aria-label={t('nextButton')}
               >
@@ -364,3 +372,4 @@ export default function LocalHighlightsPage() {
     </div>
   );
 }
+
