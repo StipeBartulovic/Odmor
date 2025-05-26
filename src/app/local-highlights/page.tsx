@@ -1,7 +1,7 @@
 // src/app/local-highlights/page.tsx
 'use client';
 
-import { useEffect, useState, useCallback, memo } from 'react';
+import { useEffect, useState, useCallback, memo, useMemo } from 'react';
 import Head from 'next/head';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { HighlightCard } from '@/components/shared/HighlightCard';
