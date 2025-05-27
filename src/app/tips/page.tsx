@@ -334,7 +334,7 @@ export default function TipsPage() {
             {tipsData.map((category: TipCategory) => (
               <Card key={getLocalizedText(category.title)} className="shadow-xl rounded-xl overflow-hidden">
                 <CardHeader className="bg-muted/30 p-4 md:p-6">
-                  <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+                  <CardTitle className="text-xl md:text-2xl font-semibold text-primary flex items-center gap-3">
                     {React.createElement(getIcon(category.icon), { className: "h-7 w-7" })}
                     {getLocalizedText(category.title)}
                   </CardTitle>
@@ -377,7 +377,7 @@ export default function TipsPage() {
           {/* Video Links Section */}
           <Card className="shadow-xl rounded-xl mt-12">
             <CardHeader className="bg-muted/30 p-4 md:p-6">
-              <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+              <CardTitle className="text-xl md:text-2xl font-semibold text-primary flex items-center gap-3">
                 <PlayCircle className="h-7 w-7" />
                 {t('videoSectionTitle') as string}
               </CardTitle>
@@ -404,7 +404,7 @@ export default function TipsPage() {
 
           <Card className="shadow-xl rounded-xl mt-12">
             <CardHeader className="bg-muted/30 p-4 md:p-6">
-              <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+              <CardTitle className="text-xl md:text-2xl font-semibold text-primary flex items-center gap-3">
                 <Info className="h-7 w-7" />
                 {t('didYouKnowTitle') as string}
               </CardTitle>

@@ -208,7 +208,7 @@ export default function UsefulLinksPage() {
             {usefulLinksData.map((category: UsefulLinkCategory) => (
               <Card key={getLocalizedText(category.title)} className="shadow-xl rounded-xl overflow-hidden">
                 <CardHeader className="bg-muted/30 p-4 md:p-6">
-                  <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+                  <CardTitle className="text-xl md:text-2xl font-semibold text-primary flex items-center gap-3">
                     {React.createElement(getLinkIconElement(category.categoryIcon), { className: "h-7 w-7" })}
                     {getLocalizedText(category.title)}
                   </CardTitle>
@@ -240,7 +240,7 @@ export default function UsefulLinksPage() {
           {/* Live News Section */}
           <Card className="shadow-xl rounded-xl mt-12 border-2 border-primary animate-pulse">
             <CardHeader className="bg-muted/30 p-4 md:p-6">
-              <CardTitle className="text-xl md:text-2xl font-semibold text-secondary flex items-center gap-3">
+              <CardTitle className="text-xl md:text-2xl font-semibold text-primary flex items-center gap-3">
                 <RadioTower className="h-7 w-7 text-primary" />
                 <span>
                   <span className="animate-pulse text-primary font-bold">{t('liveNewsPrefix')}</span> {t('liveNewsSuffix')}

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Activity } from '@/services/activities';
@@ -139,7 +140,7 @@ export function ActivitiesSection() {
           <CardContent className="p-6 md:p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h2 className="text-xl font-semibold text-secondary mb-6 flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-primary mb-6 flex items-center gap-2">
                   <Leaf className="h-6 w-6" /> {t('freeActivitiesTitle')}
                 </h2>
                 {freeActivities.length > 0 ? (
@@ -154,7 +155,7 @@ export function ActivitiesSection() {
               </div>
 
               <div>
-                <h2 className="text-xl font-semibold text-secondary mb-6 flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-primary mb-6 flex items-center gap-2">
                   <Ticket className="h-6 w-6" /> {t('paidActivitiesTitle')}
                 </h2>
                 {paidActivities.length > 0 ? (
