@@ -1,4 +1,6 @@
 // src/components/shared/AppLogo.tsx
+// This component is no longer used as the logo is directly embedded as an <img> in AppHeader.tsx
+// You can choose to delete this file or keep it for future reference.
 import type { SVGProps } from 'react';
 
 export function AppLogo(props: SVGProps<SVGSVGElement>) {
@@ -6,10 +8,6 @@ export function AppLogo(props: SVGProps<SVGSVGElement>) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 100 100"
-      // width and height will be controlled by className in AppHeader.tsx
-      // Default width/height here are just placeholders if not overridden.
-      // width="32" 
-      // height="32"
       {...props}
     >
       {/* Left brown semi-circle part */}

@@ -2,8 +2,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Lightbulb, Link as LinkIconLucide, MessageSquarePlus, Menu, Film } from 'lucide-react'; // Added Menu and Film
-import { AppLogo } from './AppLogo';
+import { Lightbulb, Link as LinkIconLucide, MessageSquarePlus, Menu, Film } from 'lucide-react';
+// Removed AppLogo import
 import { ThemeToggleButton } from './ThemeToggleButton';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Button } from '@/components/ui/button';
@@ -12,23 +12,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; // Added Dropdown components
+} from "@/components/ui/dropdown-menu";
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
 
-const appTitleTranslations: Record<string, string> = {
-  en: 'odmarAI',
-  it: 'odmarAI', 
-  de: 'odmarAI',
-  pl: 'odmarAI',
-  fr: 'odmarAI',
-  es: 'odmarAI',
-};
+// Removed appTitleTranslations
 
 const headerLinkTranslations = {
   localTipsLink: {
-    en: 'Local Tips', // Simplified for brevity in menu
+    en: 'Local Tips',
     it: 'Consigli Locali',
     de: 'Lokale Tipps',
     pl: 'Lokalne Wskazówki',
@@ -43,20 +36,20 @@ const headerLinkTranslations = {
     fr: 'Liens Utiles',
     es: 'Enlaces Útiles',
   },
-  localHighlightsLink: { // Added translation for Local Highlights
+  localHighlightsLink: {
     en: 'Local Highlights',
     it: 'Attrazioni Locali',
     de: 'Lokale Highlights',
     pl: 'Lokalne Atrakcje',
-    fr: 'Points Forts', // Shorter for menu
-    es: 'Destacados', // Shorter for menu
+    fr: 'Points Forts',
+    es: 'Destacados',
   },
   tellUsMoreLink: {
     en: 'Tell us more',
     it: 'Dicci di più',
     de: 'Erzähl uns mehr',
-    pl: 'Powiedz więcej', // Shorter
-    fr: 'Dites-plus', // Shorter
+    pl: 'Powiedz więcej',
+    fr: 'Dites-plus',
     es: 'Cuéntanos más',
   }
 };
@@ -69,10 +62,6 @@ export function AppHeader() {
     setIsMounted(true);
   }, []);
   
-  const tAppTitle: ReactNode = isMounted 
-    ? (appTitleTranslations[selectedLanguage] || appTitleTranslations.en)
-    : appTitleTranslations.en;
-
   const t = (fieldKey: keyof typeof headerLinkTranslations): string => {
     const langToUse = isMounted ? selectedLanguage : 'en';
     // @ts-ignore
@@ -85,14 +74,12 @@ export function AppHeader() {
       <header className="py-6 bg-background shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-muted rounded animate-pulse"></div>
-            <div className="h-8 w-24 bg-muted rounded animate-pulse"></div>
+            <div className="h-10 w-auto bg-muted rounded animate-pulse" style={{width: "120px"}}></div> {/* Adjusted placeholder width */}
           </div>
           <div className="flex items-center gap-3">
-            {/* Placeholders for desktop links now effectively hidden on mobile by design */}
-            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div> {/* LanguageSwitcher placeholder */}
-            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div> {/* ThemeToggleButton placeholder */}
-            <div className="h-10 w-10 bg-muted rounded-md animate-pulse md:hidden"></div> {/* Mobile Menu placeholder */}
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div>
+            <div className="h-10 w-10 bg-muted rounded-full animate-pulse"></div>
+            <div className="h-10 w-10 bg-muted rounded-md animate-pulse md:hidden"></div>
           </div>
         </div>
       </header>
@@ -103,10 +90,13 @@ export function AppHeader() {
     <header className="py-6 bg-background shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">
-          <AppLogo className="h-10 w-10 text-primary" />
-          <h1 className="text-3xl font-bold text-primary tracking-tight">
-            {tAppTitle}
-          </h1>
+          {/* Replaced AppLogo and text with img tag */}
+          <img 
+            src="https://i.imgur.com/3bEOM2h.png" 
+            alt="odmarAI Logo" 
+            className="h-10 w-auto" // Adjust height as needed, width will scale
+            style={{ maxHeight: '40px' }} // Max height to ensure it fits well
+          />
         </Link>
         
         <div className="flex items-center gap-2 sm:gap-3">
@@ -127,7 +117,7 @@ export function AppHeader() {
             </Button>
           </Link>
           <Link href="/feedback" passHref>
-            <Button variant="ghost" size="sm" className="text-xs sm:text-sm hidden md:inline-flex items-center"> {/* Changed from variant="link" and made consistent */}
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm hidden md:inline-flex items-center">
                <MessageSquarePlus className="mr-1 sm:mr-2 h-4 w-4" /> {t('tellUsMoreLink')}
             </Button>
           </Link>
