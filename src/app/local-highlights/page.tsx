@@ -1,4 +1,3 @@
-
 // src/app/local-highlights/page.tsx
 'use client';
 
@@ -70,7 +69,7 @@ const pageTranslations = {
   nextButton: {
     en: 'Next', it: 'Successivo', de: 'Nächste', pl: 'Następny', fr: 'Suivant', es: 'Siguiente'
   },
-  // Removed loadMoreButton and loadingMore translations as they are no longer needed
+  // Removed loadMoreButton and loadingMore translations
 };
 
 const initialFallbackHighlights: LocalHighlight[] = [
@@ -84,7 +83,7 @@ const initialFallbackHighlights: LocalHighlight[] = [
     description: 'Exploring the natural beauty and adventures in Croatia.',
     category: 'travel',
     location: 'Croatia',
-    createdAt: { seconds: 1700000000, nanoseconds: 0 } as Timestamp // Mock timestamp
+    createdAt: { seconds: 1700000000, nanoseconds: 0 } as Timestamp 
   },
   {
     id: 'fallback-tiktok-msurinaa',
@@ -96,7 +95,7 @@ const initialFallbackHighlights: LocalHighlight[] = [
     description: 'Beautiful views from the Croatian coast.',
     category: 'travel',
     location: 'Croatia',
-    createdAt: { seconds: 1700000001, nanoseconds: 0 } as Timestamp // Mock timestamp
+    createdAt: { seconds: 1700000001, nanoseconds: 0 } as Timestamp
   },
   {
     id: 'fallback-tiktok-emigrantochka',
@@ -108,7 +107,7 @@ const initialFallbackHighlights: LocalHighlight[] = [
     description: 'Capturing travel experiences.',
     category: 'travel',
     location: 'Croatia',
-    createdAt: { seconds: 1700000002, nanoseconds: 0 } as Timestamp // Mock timestamp
+    createdAt: { seconds: 1700000002, nanoseconds: 0 } as Timestamp
   }
 ];
 
@@ -135,8 +134,7 @@ export default function LocalHighlightsPage() {
   
   const [allFetchedHighlights, setAllFetchedHighlights] = useState<LocalHighlight[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  // currentLastDoc is no longer needed if we don't load more
-  const [hasMoreToFetch, setHasMoreToFetch] = useState(true); // Indicates if more *could* be in DB
+  const [hasMoreToFetch, setHasMoreToFetch] = useState(true); 
 
   useEffect(() => {
     setIsMounted(true);
@@ -150,14 +148,17 @@ export default function LocalHighlightsPage() {
   } = useQuery({
     queryKey: ['localHighlights', 'initial'],
     queryFn: () => getLocalHighlights(HIGHLIGHTS_PAGE_SIZE, null),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, 
     enabled: isMounted, 
   });
 
   useEffect(() => {
     if (initialQueryData) {
-      setAllFetchedHighlights(initialQueryData.highlights);
-      // We don't need to set currentLastDoc if not loading more
+      setAllFetchedHighlights(prev => {
+        // Simple concatenation and deduplication based on ID
+        const combined = [...prev, ...initialQueryData.highlights];
+        return Array.from(new Map(combined.map(item => [item.id, item])).values());
+      });
       setHasMoreToFetch(initialQueryData.highlights.length === HIGHLIGHTS_PAGE_SIZE && !!initialQueryData.newLastDoc);
     }
   }, [initialQueryData]);
@@ -172,7 +173,7 @@ export default function LocalHighlightsPage() {
     }
     return Array.from(new Map(combined.map(item => [item.id, item])).values())
       .filter(h => h.embedUrl && !h.embedUrl.includes('null'))
-      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); // Ensure consistent sorting
+      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); 
   }, [allFetchedHighlights, isLoadingInitialQuery, isErrorInitialQuery]);
 
 
@@ -186,7 +187,6 @@ export default function LocalHighlightsPage() {
   const handleNext = useCallback(() => {
     setCurrentIndex((prevIndex) => {
       const newIndex = prevIndex + 1;
-      // No longer try to load more, just check bounds
       return newIndex < displayedHighlights.length ? newIndex : prevIndex;
     });
   }, [displayedHighlights.length]);
@@ -230,7 +230,7 @@ export default function LocalHighlightsPage() {
            </Button>
         </div>
 
-        {isErrorInitialQuery && allFetchedHighlights.length === 0 && ( // Show error only if no fallbacks either
+        {isErrorInitialQuery && allFetchedHighlights.length === 0 && ( 
              <div className="flex flex-col items-center justify-center text-center flex-grow py-10">
                 <VideoOff className="h-16 w-16 text-destructive mb-4" />
                 <p className="text-xl text-muted-foreground">Error loading highlights.</p>
@@ -239,10 +239,9 @@ export default function LocalHighlightsPage() {
 
         {!isErrorInitialQuery && displayedHighlights.length > 0 && currentHighlight ? (
           <div className="w-full max-w-2xl flex flex-col items-center">
-            <div className="w-full aspect-[9/16] sm:aspect-[9/16] rounded-lg shadow-xl overflow-hidden mb-6 bg-muted">
+            <div className="w-full aspect-[9/16] sm:aspect-[9/11] rounded-lg shadow-xl overflow-hidden mb-6 bg-muted">
               <HighlightCard 
                 highlight={currentHighlight}
-                isInitiallyVisible={currentIndex === 0} 
               />
             </div>
             <div className="flex justify-between w-full max-w-xs sm:max-w-sm items-center mb-6">
@@ -271,7 +270,6 @@ export default function LocalHighlightsPage() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
-            {/* Removed Load More Button */}
           </div>
         ) : (
           !isLoadingInitialQuery && !isErrorInitialQuery && ( 
@@ -286,4 +284,3 @@ export default function LocalHighlightsPage() {
     </div>
   );
 }
-
