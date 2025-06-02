@@ -8,12 +8,12 @@ import { AppHeader } from '@/components/shared/AppHeader';
 import { HighlightCard } from '@/components/shared/HighlightCard';
 import type { LocalHighlight } from '@/services/localHighlights';
 import { getLocalHighlights } from '@/services/localHighlights';
-import { Loader2, ArrowLeft, ArrowRight, VideoOff, Download } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, VideoOff } from 'lucide-react'; // Removed Download
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import type { QueryDocumentSnapshot } from 'firebase/firestore';
+import type { QueryDocumentSnapshot, Timestamp } from 'firebase/firestore';
 
 const pageTranslations = {
   title: {
@@ -39,14 +39,6 @@ const pageTranslations = {
     pl: 'Ładowanie atrakcji...',
     fr: 'Chargement des points forts...',
     es: 'Cargando destacados...',
-  },
-  loadingMore: {
-    en: 'Loading more...',
-    it: 'Caricamento altri...',
-    de: 'Lade mehr...',
-    pl: 'Ładowanie więcej...',
-    fr: 'Chargement de plus...',
-    es: 'Cargando más...',
   },
   noHighlights: {
     en: 'No local highlights found at the moment. Check back soon!',
@@ -78,14 +70,7 @@ const pageTranslations = {
   nextButton: {
     en: 'Next', it: 'Successivo', de: 'Nächste', pl: 'Następny', fr: 'Suivant', es: 'Siguiente'
   },
-  loadMoreButton: {
-    en: 'Load More Highlights',
-    it: 'Carica Altre Attrazioni',
-    de: 'Weitere Highlights laden',
-    pl: 'Załaduj Więcej Atrakcji',
-    fr: 'Charger Plus de Points Forts',
-    es: 'Cargar Más Destacados',
-  }
+  // Removed loadMoreButton and loadingMore translations as they are no longer needed
 };
 
 const initialFallbackHighlights: LocalHighlight[] = [
@@ -99,6 +84,7 @@ const initialFallbackHighlights: LocalHighlight[] = [
     description: 'Exploring the natural beauty and adventures in Croatia.',
     category: 'travel',
     location: 'Croatia',
+    createdAt: { seconds: 1700000000, nanoseconds: 0 } as Timestamp // Mock timestamp
   },
   {
     id: 'fallback-tiktok-msurinaa',
@@ -110,6 +96,7 @@ const initialFallbackHighlights: LocalHighlight[] = [
     description: 'Beautiful views from the Croatian coast.',
     category: 'travel',
     location: 'Croatia',
+    createdAt: { seconds: 1700000001, nanoseconds: 0 } as Timestamp // Mock timestamp
   },
   {
     id: 'fallback-tiktok-emigrantochka',
@@ -121,8 +108,10 @@ const initialFallbackHighlights: LocalHighlight[] = [
     description: 'Capturing travel experiences.',
     category: 'travel',
     location: 'Croatia',
+    createdAt: { seconds: 1700000002, nanoseconds: 0 } as Timestamp // Mock timestamp
   }
 ];
+
 
 const HIGHLIGHTS_PAGE_SIZE = 5;
 
@@ -146,9 +135,8 @@ export default function LocalHighlightsPage() {
   
   const [allFetchedHighlights, setAllFetchedHighlights] = useState<LocalHighlight[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentLastDoc, setCurrentLastDoc] = useState<QueryDocumentSnapshot<unknown> | null>(null);
-  const [hasMoreToFetch, setHasMoreToFetch] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  // currentLastDoc is no longer needed if we don't load more
+  const [hasMoreToFetch, setHasMoreToFetch] = useState(true); // Indicates if more *could* be in DB
 
   useEffect(() => {
     setIsMounted(true);
@@ -163,30 +151,29 @@ export default function LocalHighlightsPage() {
     queryKey: ['localHighlights', 'initial'],
     queryFn: () => getLocalHighlights(HIGHLIGHTS_PAGE_SIZE, null),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: isMounted, // Only run query when mounted
+    enabled: isMounted, 
   });
 
   useEffect(() => {
     if (initialQueryData) {
       setAllFetchedHighlights(initialQueryData.highlights);
-      setCurrentLastDoc(initialQueryData.newLastDoc);
+      // We don't need to set currentLastDoc if not loading more
       setHasMoreToFetch(initialQueryData.highlights.length === HIGHLIGHTS_PAGE_SIZE && !!initialQueryData.newLastDoc);
     }
   }, [initialQueryData]);
 
   const displayedHighlights = useMemo(() => {
-    // Combine fetched highlights with fallbacks, ensuring fallbacks are only added if no fetched data or to supplement
     let combined: LocalHighlight[];
-    if (allFetchedHighlights.length === 0 && !isLoadingInitialQuery) {
+    if (allFetchedHighlights.length === 0 && !isLoadingInitialQuery && !isErrorInitialQuery) {
       combined = [...initialFallbackHighlights];
     } else {
-      // Ensure fallbacks are unique if they are also fetched
       const fallbackToAdd = initialFallbackHighlights.filter(fb => !allFetchedHighlights.find(fh => fh.id === fb.id));
       combined = [...allFetchedHighlights, ...fallbackToAdd];
     }
     return Array.from(new Map(combined.map(item => [item.id, item])).values())
-      .filter(h => h.embedUrl && !h.embedUrl.includes('null'));
-  }, [allFetchedHighlights, isLoadingInitialQuery]);
+      .filter(h => h.embedUrl && !h.embedUrl.includes('null'))
+      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); // Ensure consistent sorting
+  }, [allFetchedHighlights, isLoadingInitialQuery, isErrorInitialQuery]);
 
 
   const t = useCallback((fieldKey: keyof typeof pageTranslations): string => {
@@ -195,42 +182,24 @@ export default function LocalHighlightsPage() {
     return typeof translation === 'string' ? translation : String(fieldKey);
   }, [isMounted, selectedLanguage]);
   
-  const handleLoadMore = useCallback(async () => {
-    if (!hasMoreToFetch || isLoadingMore || !currentLastDoc) return;
-    setIsLoadingMore(true);
-    try {
-      const { highlights: newHighlights, newLastDoc } = await getLocalHighlights(HIGHLIGHTS_PAGE_SIZE, currentLastDoc);
-      setAllFetchedHighlights(prev => [...prev, ...newHighlights]);
-      setCurrentLastDoc(newLastDoc);
-      setHasMoreToFetch(newHighlights.length === HIGHLIGHTS_PAGE_SIZE && !!newLastDoc);
-    } catch (error) {
-      console.error("Error loading more highlights:", error);
-      setHasMoreToFetch(false); // Stop trying if there's an error
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [hasMoreToFetch, isLoadingMore, currentLastDoc]);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prevIndex) => {
       const newIndex = prevIndex + 1;
-      if (newIndex >= displayedHighlights.length && hasMoreToFetch && !isLoadingMore) {
-        handleLoadMore(); // Attempt to load more if at the end and more might be available
-        return prevIndex; // Stay on current until more are loaded
-      }
+      // No longer try to load more, just check bounds
       return newIndex < displayedHighlights.length ? newIndex : prevIndex;
     });
-  }, [displayedHighlights.length, hasMoreToFetch, isLoadingMore, handleLoadMore]);
+  }, [displayedHighlights.length]);
 
   const handlePrevious = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + displayedHighlights.length) % displayedHighlights.length);
-  }, [displayedHighlights.length]);
+    setCurrentIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : 0));
+  }, []);
 
 
   const currentHighlight = displayedHighlights[currentIndex];
   const firstHighlightEmbedUrl = displayedHighlights.length > 0 ? displayedHighlights[0].embedUrl : (initialFallbackHighlights.length > 0 ? initialFallbackHighlights[0].embedUrl : null);
 
-  if (!isMounted || currentYear === null || (isLoadingInitialQuery && allFetchedHighlights.length === 0 && displayedHighlights.length === 0) ) {
+  if (!isMounted || currentYear === null || (isLoadingInitialQuery && allFetchedHighlights.length === 0 && displayedHighlights.length === 0 && !isErrorInitialQuery) ) {
      return (
       <div className="flex flex-col min-h-screen bg-background">
         <AppHeader />
@@ -261,7 +230,7 @@ export default function LocalHighlightsPage() {
            </Button>
         </div>
 
-        {isErrorInitialQuery && (
+        {isErrorInitialQuery && allFetchedHighlights.length === 0 && ( // Show error only if no fallbacks either
              <div className="flex flex-col items-center justify-center text-center flex-grow py-10">
                 <VideoOff className="h-16 w-16 text-destructive mb-4" />
                 <p className="text-xl text-muted-foreground">Error loading highlights.</p>
@@ -270,17 +239,17 @@ export default function LocalHighlightsPage() {
 
         {!isErrorInitialQuery && displayedHighlights.length > 0 && currentHighlight ? (
           <div className="w-full max-w-2xl flex flex-col items-center">
-            <div className="w-full aspect-[9/16] sm:aspect-video rounded-lg shadow-xl overflow-hidden mb-6 bg-muted">
+            <div className="w-full aspect-[9/16] sm:aspect-[9/16] rounded-lg shadow-xl overflow-hidden mb-6 bg-muted">
               <HighlightCard 
                 highlight={currentHighlight}
-                isInitiallyVisible={currentIndex === 0} // Only first card is initially visible for eager load
+                isInitiallyVisible={currentIndex === 0} 
               />
             </div>
             <div className="flex justify-between w-full max-w-xs sm:max-w-sm items-center mb-6">
               <Button 
                 variant="outline" 
                 onClick={handlePrevious} 
-                disabled={displayedHighlights.length <= 1 && !hasMoreToFetch}
+                disabled={currentIndex === 0}
                 className="rounded-lg shadow-sm"
                 aria-label={t('previousButton')}
               >
@@ -289,13 +258,12 @@ export default function LocalHighlightsPage() {
               </Button>
               <span className="text-sm text-muted-foreground">
                 {currentIndex + 1} / {displayedHighlights.length}
-                {hasMoreToFetch && !isLoadingMore && "+"}
-                {isLoadingMore && <Loader2 className="ml-1 h-4 w-4 animate-spin inline-block"/>}
+                {hasMoreToFetch && displayedHighlights.length >= HIGHLIGHTS_PAGE_SIZE && "+"} 
               </span>
               <Button 
                 variant="outline" 
                 onClick={handleNext} 
-                disabled={!hasMoreToFetch && currentIndex === displayedHighlights.length -1 }
+                disabled={currentIndex >= displayedHighlights.length - 1}
                 className="rounded-lg shadow-sm"
                 aria-label={t('nextButton')}
               >
@@ -303,29 +271,10 @@ export default function LocalHighlightsPage() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
-             {hasMoreToFetch && (
-              <Button 
-                onClick={handleLoadMore} 
-                disabled={isLoadingMore}
-                variant="secondary"
-                className="rounded-lg shadow-md mt-4"
-              >
-                {isLoadingMore ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {t('loadingMore')}
-                  </>
-                ) : (
-                   <>
-                    <Download className="mr-2 h-5 w-5" />
-                    {t('loadMoreButton')}
-                  </>
-                )}
-              </Button>
-            )}
+            {/* Removed Load More Button */}
           </div>
         ) : (
-          !isLoadingInitialQuery && !isErrorInitialQuery && ( // Only show "no highlights" if not loading and no error
+          !isLoadingInitialQuery && !isErrorInitialQuery && ( 
             <div className="flex flex-col items-center justify-center text-center flex-grow py-10">
               <VideoOff className="h-16 w-16 text-muted-foreground mb-4" />
               <p className="text-xl text-muted-foreground">{t('noHighlights')}</p>
