@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Script from 'next/script';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Loader2, AlertTriangle } from 'lucide-react'; // Added AlertTriangle
+import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 // Define TypeScript interfaces for GeoJSON
@@ -72,11 +72,11 @@ export function InteractiveMap() {
   const [isMounted, setIsMounted] = useState(false);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
 
   const mapRef = useRef<any>(null);
   const geoLayerRef = useRef<any>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null); // Ref for the map container div
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const t = useCallback(
     (fieldKey: keyof typeof translations): string => {
@@ -90,32 +90,35 @@ export function InteractiveMap() {
 
   // Effect for initializing the map
   useEffect(() => {
-    if (leafletLoaded && isMounted && !mapRef.current && mapContainerRef.current) {
-      if (!mapContainerRef.current.hasChildNodes()) { // Prevent re-initialization
-        try {
-          mapRef.current = L.map(mapContainerRef.current).setView([44.1, 15.2], 8); // Adjusted default zoom
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19,
-          }).addTo(mapRef.current);
-          
-          mapRef.current.invalidateSize(); // Call invalidateSize after initial setup
-          setIsLoading(true); // Set loading for initial data fetch
-          // loadLocations will be called by its own useEffect
-        } catch (e) {
-          console.error("Leaflet map initialization error:", e);
-          setError("Could not initialize map.");
-          setIsLoading(false);
-        }
+    if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
+      try {
+        const mapInstance = L.map(mapContainerRef.current).setView([44.1, 15.2], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(mapInstance);
+        
+        mapRef.current = mapInstance;
+
+        // Call invalidateSize after a short delay to ensure the container has its final dimensions
+        setTimeout(() => {
+          if (mapRef.current) {
+            mapRef.current.invalidateSize();
+          }
+        }, 100); // 100ms delay
+        setIsLoading(true); // Set loading for initial data fetch
+      } catch (e) {
+        console.error("Leaflet map initialization error:", e);
+        setError("Could not initialize map.");
+        setIsLoading(false);
       }
     }
   }, [leafletLoaded, isMounted]);
 
 
   const loadLocations = useCallback(async (isInitialLoad = false) => {
-    if (!mapRef.current) { // Ensure map is initialized before loading locations
-        // console.log("Map not initialized, skipping loadLocations");
-        if(isInitialLoad) setIsLoading(false); // If it's an initial call but map isn't ready, stop loading
+    if (!mapRef.current) {
+        if(isInitialLoad) setIsLoading(false);
         return;
     }
     
@@ -147,7 +150,7 @@ export function InteractiveMap() {
                 ${p.menu && p.menu.length > 0 ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${p.menu.join(', ')}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> Nema podataka</p>'}
                 ${p.parking ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${p.parking}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> Nema podataka</p>'}
                 ${p.rating !== undefined ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${p.rating}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> Nema ocjene</p>'}
-                ${p.images && p.images[0] ? `<img src="${p.images[0]}" alt="${p.name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" />` : ''}
+                ${p.images && p.images[0] ? `<img src="${p.images[0]}" alt="${p.name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" data-ai-hint="location image" />` : ''}
               </div>
             `;
             layer.bindPopup(popupContent);
@@ -160,55 +163,59 @@ export function InteractiveMap() {
         if (geoLayerRef.current && geoLayerRef.current.getBounds().isValid()) {
           mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1));
         }
-        mapRef.current.invalidateSize(); // Invalidate size after fitting bounds
       } else {
-        // console.log("No locations to display.");
-        // If no features, perhaps zoom to a default wider view or keep current view
-        // mapRef.current.setView([44.1, 15.2], 7); // Example: wider view of Croatia
-        mapRef.current.invalidateSize();
+         if (mapRef.current) {
+            mapRef.current.setView([44.1, 15.2], 7); // Default view if no locations
+         }
       }
     } catch (err: any) {
       console.error('Error loading locations:', err);
       setError(t('errorLoading') + (err.message ? ` (${err.message})` : ''));
     } finally {
-       setIsLoading(false); // Always set loading to false after attempt
+       setIsLoading(false);
+       // Invalidate size after data load and potential fitBounds
+       if (mapRef.current) {
+        setTimeout(() => {
+          if (mapRef.current) {
+            mapRef.current.invalidateSize();
+          }
+        }, 150); // Slightly longer delay after data load
+       }
     }
-  }, [t]); // Removed mapRef from dependencies as it's a ref
+  }, [t]);
 
   // Effect for initial data load
   useEffect(() => {
     if (isMounted && leafletLoaded && mapRef.current) {
         loadLocations(true);
     }
-  }, [isMounted, leafletLoaded, loadLocations]); // Removed mapRef.current, loadLocations has its own check
+  }, [isMounted, leafletLoaded, mapRef, loadLocations]); // mapRef itself, not mapRef.current
 
   // Effect for periodic refresh
   useEffect(() => {
     if (!leafletLoaded || !mapRef.current) return;
     
     const intervalId = setInterval(() => {
-        // console.log("Periodically refreshing locations...");
         loadLocations(false);
     }, 60000);
     
     return () => clearInterval(intervalId);
-  }, [leafletLoaded, loadLocations]); // Removed mapRef.current
-
+  }, [leafletLoaded, mapRef, loadLocations]); // mapRef itself, not mapRef.current
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
 
-  if (!isMounted) {
+  if (!isMounted && typeof window === 'undefined') { // Better SSR placeholder
     return (
       <section className="py-8 md:py-12 bg-muted/30">
         <div className="container mx-auto px-4">
           <Card className="shadow-xl rounded-xl overflow-hidden">
             <CardHeader className="bg-background p-6">
-              <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
+               <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
             </CardHeader>
-            <CardContent className="p-0 md:p-2">
+            <CardContent className="p-0"> {/* Removed md:p-2 */}
               <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
@@ -250,37 +257,28 @@ export function InteractiveMap() {
                 {t('mapTitle')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0 md:p-2">
-              {/* Map container div is always rendered with its aspect ratio styling */}
+            <CardContent className="p-0"> {/* Ensure no padding here */}
               <div 
-                id="interactive-map-container-outer" // Outer container for loading/error messages
-                className="aspect-[16/9] w-full rounded-lg overflow-hidden relative"
+                id="interactive-map-container-outer"
+                className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted" // Added rounded-b-lg if CardContent had padding before
               >
                 <div 
-                  ref={mapContainerRef} // Ref is on the actual map div
+                  ref={mapContainerRef}
                   id="interactive-map-container" 
-                  className="w-full h-full" // Map div takes full size of its parent
+                  className="w-full h-full"
                 />
-                {/* Loading State Overlay */}
                 {isLoading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/70 z-10">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
                     <p className="text-lg text-muted-foreground">{t('loading')}</p>
                   </div>
                 )}
-                {/* Error State Overlay (only if mapRef is not yet initialized or loading failed badly) */}
-                {error && !mapRef.current && !isLoading && ( // Ensure isLoading is false to show this only after an attempt
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/10 text-destructive z-10 p-4 text-center">
+                {error && !isLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-10 p-4 text-center backdrop-blur-sm">
                     <AlertTriangle className="h-10 w-10 mb-2" />
                     <p className="font-semibold">Map Error</p>
                     <p className="text-sm">{error}</p>
                   </div>
-                )}
-                 {/* Error message when map is initialized but data loading failed */}
-                {error && mapRef.current && !isLoading && (
-                    <div className="absolute top-2 left-2 right-2 bg-destructive/80 text-destructive-foreground p-3 rounded-md shadow-lg z-20 text-center text-sm">
-                        <AlertTriangle className="inline h-5 w-5 mr-1" /> {error}
-                    </div>
                 )}
               </div>
             </CardContent>
@@ -290,4 +288,4 @@ export function InteractiveMap() {
     </>
   );
 }
-
+    
