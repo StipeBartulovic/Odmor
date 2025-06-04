@@ -103,11 +103,9 @@ body {
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  /* Removed: * { @apply border-border; } */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground border-border; /* Added border-border to body if a general border is desired, but not on every element */
   }
 }
 
@@ -130,4 +128,3 @@ body {
   height: 100%;
   border: none;
 }
-
