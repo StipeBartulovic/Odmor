@@ -6,8 +6,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Script from 'next/script';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
+import { MapPin, Loader2, AlertTriangle, Maximize, Minimize } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button'; // Make sure Button is imported
 
 // Define TypeScript interfaces for GeoJSON
 export interface GeoJSONPoint {
@@ -68,7 +69,15 @@ const translations = {
     pl: 'Błąd ładowania kafelków mapy. Sprawdź połączenie sieciowe.',
     fr: 'Échec du chargement des tuiles de la carte. Vérifiez votre connexion réseau.',
     es: 'Error al cargar las teselas del mapa. Comprueba tu conexión de red.',
-  }
+  },
+  // fullscreenButton: {
+  //   en: 'Toggle Fullscreen',
+  //   it: 'Attiva/Disattiva Schermo Intero',
+  //   de: 'Vollbild umschalten',
+  //   pl: 'Przełącz Pełny Ekran',
+  //   fr: 'Basculer en Plein Écran',
+  //   es: 'Alternar Pantalla Completa',
+  // },
 };
 
 // Declare Leaflet 'L' type for global scope (available after script load)
@@ -80,6 +89,7 @@ export function InteractiveMap() {
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // const [isFullscreen, setIsFullscreen] = useState(false);
 
   const mapRef = useRef<any>(null); // Holds the Leaflet map instance
   // const geoLayerRef = useRef<any>(null); // Holds the GeoJSON layer
@@ -95,7 +105,6 @@ export function InteractiveMap() {
     [isMounted, selectedLanguage]
   );
 
-  // Minimal loadLocations - commented out for basic map test
   // const loadLocations = useCallback(async (isInitialLoad = false) => {
   //   if (!mapRef.current) {
   //     if(isInitialLoad) setIsLoading(false);
@@ -116,7 +125,6 @@ export function InteractiveMap() {
   //     // const data: GeoJSONFeatureCollection = await response.json();
   //     // console.log('Fetched GeoJSON data:', JSON.stringify(data, null, 2));
 
-  //     // // Validate GeoJSON data
   //     // if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
   //     //   console.error('Invalid GeoJSON data received from API.');
   //     //   throw new Error('Invalid GeoJSON data received from API.');
@@ -131,7 +139,6 @@ export function InteractiveMap() {
   //     //     typeof feature.geometry.coordinates[1] !== 'number'    
   //     //   ) {
   //     //     console.warn(`Invalid GeoJSON feature at index ${index}:`, feature);
-  //     //     // Optionally throw an error or filter out invalid features
   //     //   }
   //     // });
 
@@ -163,8 +170,6 @@ export function InteractiveMap() {
   //     //       layer.bindPopup(popupContent);
   //     //     },
   //     //     pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
-  //     //       // GeoJSON coordinates are [lng, lat], Leaflet L.marker expects [lat, lng]
-  //     //       // However, L.geoJSON handles this conversion automatically.
   //     //       return L.marker(latlng); 
   //     //     }
   //     //   }).addTo(mapRef.current);
@@ -183,12 +188,11 @@ export function InteractiveMap() {
   //   } finally {
   //     // setIsLoading(false);
   //     // if (mapRef.current) {
-  //     //    // Call invalidateSize with a slight delay to ensure DOM is ready
   //     //    setTimeout(() => {
   //     //     if (mapRef.current) {
   //     //       mapRef.current.invalidateSize(true); 
   //     //     }
-  //     //   }, 200);
+  //     //   }, 350); 
   //     // }
   //   }
   // }, [t]);
@@ -196,7 +200,7 @@ export function InteractiveMap() {
   // Effect for initializing the map
   useEffect(() => {
     if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
-      setIsLoading(true); // Set loading true before map init
+      setIsLoading(true);
       setError(null);
       try {
         const mapInstance = L.map(mapContainerRef.current, {
@@ -210,24 +214,20 @@ export function InteractiveMap() {
           zoomOffset: 0,
         }).on('tileerror', (tileErrorEvent: any) => { 
             console.error('Tile loading error:', tileErrorEvent.error, tileErrorEvent.tile);
-            setError(t('tileError')); // Set user-friendly error
+            setError(t('tileError'));
         }).addTo(mapInstance);
         
         mapRef.current = mapInstance;
 
         mapInstance.whenReady(() => {
-          if (mapRef.current) {
-            mapRef.current.invalidateSize(true);
-            // For basic map test, loadLocations is commented out
-            // loadLocations(true); 
-            
-            // Dispatch resize event after a short delay
-            setTimeout(() => {
-              window.dispatchEvent(new Event('resize'));
-              console.log("Dispatched window resize event for Leaflet.");
-            }, 500); // 500ms delay
-          }
-          console.log("Basic map initialized and ready.");
+          console.log("Map is ready. Calling invalidateSize and dispatching resize.");
+          setTimeout(() => {
+            if (mapRef.current) {
+              mapRef.current.invalidateSize(true);
+              // loadLocations(true); // Commented out for basic map test
+              window.dispatchEvent(new Event("resize")); // Dispatch resize event
+            }
+          }, 500); // Increased delay
           setIsLoading(false); 
         });
 
@@ -238,7 +238,6 @@ export function InteractiveMap() {
       }
     }
     
-    // Cleanup function to remove the map instance when the component unmounts
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -246,65 +245,74 @@ export function InteractiveMap() {
         console.log("Leaflet map instance removed.");
       }
     };
-  // }, [leafletLoaded, isMounted, loadLocations, t]); // loadLocations removed from dependencies for basic test
-  }, [leafletLoaded, isMounted, t]); // loadLocations removed for basic test
+  // }, [leafletLoaded, isMounted, loadLocations, t]); // loadLocations removed for basic test
+  }, [leafletLoaded, isMounted, t]);
 
 
-  // Effect for ResizeObserver
-  useEffect(() => {
-    if (!leafletLoaded || !mapRef.current || !mapContainerRef.current) return;
-
-    const mapInstance = mapRef.current; 
+  // Effect for ResizeObserver - Commented out for simplification
+  // useEffect(() => {
+  //   if (!leafletLoaded || !mapRef.current || !mapContainerRef.current) return;
     
-    const resizeObserver = new ResizeObserver(() => {
-        if (mapInstance) {
-            mapInstance.invalidateSize(true);
-        }
-    });
-    if (mapContainerRef.current) {
-      resizeObserver.observe(mapContainerRef.current);
-    }
+  //   const resizeObserver = new ResizeObserver(() => {
+  //       if (mapRef.current) {
+  //           mapRef.current.invalidateSize(true);
+  //       }
+  //   });
+  //   if (mapContainerRef.current) {
+  //     resizeObserver.observe(mapContainerRef.current);
+  //   }
     
-    return () => {
-      if (mapContainerRef.current) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        resizeObserver.unobserve(mapContainerRef.current);
-      }
-      resizeObserver.disconnect();
-    };
-  }, [leafletLoaded]); 
+  //   return () => {
+  //     if (mapContainerRef.current) {
+  //       // eslint-disable-next-line react-hooks/exhaustive-deps
+  //       resizeObserver.unobserve(mapContainerRef.current);
+  //     }
+  //     resizeObserver.disconnect();
+  //   };
+  // }, [leafletLoaded]); 
 
-  // Effect for window resize listener
-  useEffect(() => {
-    if (!leafletLoaded || !mapRef.current) return;
+  // Effect for window resize listener - Commented out for simplification
+  // useEffect(() => {
+  //   if (!leafletLoaded || !mapRef.current) return;
 
-    const mapInstance = mapRef.current;
-    const handleWindowResize = () => {
-        if (mapInstance) {
-            mapInstance.invalidateSize(true);
-        }
-    };
-    window.addEventListener('resize', handleWindowResize);
+  //   const mapInstance = mapRef.current;
+  //   const handleWindowResize = () => {
+  //       if (mapInstance) {
+  //           mapInstance.invalidateSize(true);
+  //       }
+  //   };
+  //   window.addEventListener('resize', handleWindowResize);
 
-    return () => {
-      window.removeEventListener('resize', handleWindowResize);
-    };
-  }, [leafletLoaded]); 
+  //   return () => {
+  //     window.removeEventListener('resize', handleWindowResize);
+  //   };
+  // }, [leafletLoaded]); 
 
   // Periodical refresh - commented out for basic map test
   // useEffect(() => {
   //   if (!leafletLoaded || !mapRef.current) return; 
     
   //   const intervalId = setInterval(() => {
-  //       loadLocations(false); 
+  //       // loadLocations(false); 
   //   }, 60000); 
     
   //   return () => clearInterval(intervalId);
-  // }, [leafletLoaded, loadLocations]);
+  // // }, [leafletLoaded, loadLocations]);
+  // }, [leafletLoaded]);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // const toggleFullscreen = () => {
+  //   setIsFullscreen(!isFullscreen);
+  //   // Invalidate map size after a short delay to allow CSS transition
+  //   setTimeout(() => {
+  //     if (mapRef.current) {
+  //       mapRef.current.invalidateSize(true);
+  //     }
+  //   }, 300);
+  // };
 
 
   if (!isMounted) { 
@@ -316,7 +324,7 @@ export function InteractiveMap() {
                <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="aspect-[16/9] w-full bg-muted flex items-center justify-center">
+              <div className="w-full bg-muted flex items-center justify-center" style={{height: '500px'}}>
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
             </CardContent>
@@ -363,26 +371,44 @@ export function InteractiveMap() {
             <CardContent className="p-0"> {/* Ensure no padding on content holding the map */}
               <div 
                 id="interactive-map-container-outer" 
-                className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted" 
-                // overflow-visible was here, changed to overflow-hidden to prevent map bleeding
+                // className={`relative w-full rounded-b-lg overflow-hidden ${
+                //   isFullscreen
+                //     ? 'fixed inset-0 z-[1000] !rounded-none'
+                //     : 'aspect-[16/9]' 
+                // }`}
+                // style={isFullscreen ? { backgroundColor: 'hsl(var(--background))' } : {backgroundColor: 'hsl(var(--muted))'}}
+                className="relative w-full rounded-b-lg overflow-hidden"
+                style={{backgroundColor: 'hsl(var(--muted))'}}
               >
+                {/* Fullscreen Toggle Button - Temporarily Commented out
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleFullscreen}
+                  className="absolute top-2 right-2 z-[1001] bg-card hover:bg-card/80 rounded-full shadow-lg"
+                  aria-label={t('fullscreenButton')}
+                >
+                  {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                </Button>
+                */}
                 <div 
                   ref={mapContainerRef}
                   id="interactive-map-container" 
-                  className="w-full" 
+                  // className={`w-full ${isFullscreen ? 'h-screen' : 'h-full'}`} 
                   style={{ 
-                    height: '500px', // Fixed height for testing
+                    width: '100%',
+                    height: '500px', // Direct fixed height
                     position: 'relative', 
                     background: (isLoading || error) && !mapRef.current ? 'hsl(var(--muted))' : 'transparent' 
                   }}
                 />
-                {(isLoading && !mapRef.current && leafletLoaded) && ( // Show loader only if map is not yet initialized but script is loaded
+                {(isLoading && leafletLoaded) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm pointer-events-none">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
                     <p className="text-lg text-muted-foreground">{t('loading')}</p>
                   </div>
                 )}
-                {error && !isLoading && ( // Show error if not loading
+                {error && !isLoading && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-10 p-4 text-center backdrop-blur-sm pointer-events-none">
                     <AlertTriangle className="h-10 w-10 mb-2" />
                     <p className="font-semibold">Map Error</p>
