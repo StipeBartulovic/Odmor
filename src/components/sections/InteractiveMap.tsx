@@ -92,7 +92,10 @@ export function InteractiveMap() {
   useEffect(() => {
     if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
       try {
-        const mapInstance = L.map(mapContainerRef.current).setView([44.1, 15.2], 8);
+        const mapInstance = L.map(mapContainerRef.current, {
+           preferCanvas: true, // Try canvas renderer
+        }).setView([44.1, 15.2], 8); // Default view
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19,
@@ -103,21 +106,22 @@ export function InteractiveMap() {
         // Call invalidateSize after a short delay to ensure the container has its final dimensions
         setTimeout(() => {
           if (mapRef.current) {
-            mapRef.current.invalidateSize();
+            mapRef.current.invalidateSize(true); // Pass true to animate
           }
-        }, 100); // 100ms delay
-        setIsLoading(true); // Set loading for initial data fetch
+        }, 250); // Increased delay
+
+        setIsLoading(true); // Set loading for initial data fetch, will be set to false in loadLocations
       } catch (e) {
         console.error("Leaflet map initialization error:", e);
         setError("Could not initialize map.");
         setIsLoading(false);
       }
     }
-  }, [leafletLoaded, isMounted]);
+  }, [leafletLoaded, isMounted]); // Only run when leaflet is loaded and component is mounted
 
 
   const loadLocations = useCallback(async (isInitialLoad = false) => {
-    if (!mapRef.current) {
+    if (!mapRef.current) { // Ensure map is initialized
         if(isInitialLoad) setIsLoading(false);
         return;
     }
@@ -128,7 +132,7 @@ export function InteractiveMap() {
     setError(null);
 
     try {
-      const response = await fetch('/api/locations');
+      const response = await fetch('/api/locations'); // Fetches from your Next.js API route
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch locations: ${response.status} ${errorText}`);
@@ -144,19 +148,26 @@ export function InteractiveMap() {
         geoLayerRef.current = L.geoJSON(data, {
           onEachFeature: (feature: GeoJSONFeature, layer: any) => {
             const p = feature.properties;
+            // Sanitize properties before using them
+            const name = p.name || 'Unknown Location';
+            const menuItems = Array.isArray(p.menu) && p.menu.length > 0 ? p.menu.join(', ') : 'Nema podataka';
+            const parkingInfo = p.parking || 'Nema podataka';
+            const ratingInfo = p.rating !== undefined ? String(p.rating) : 'Nema ocjene';
+            const imageHtml = Array.isArray(p.images) && p.images[0] ? `<img src="${p.images[0]}" alt="${name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" data-ai-hint="location image" />` : '';
+
             const popupContent = `
               <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px; line-height: 1.4;">
-                <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${p.name}</h3>
-                ${p.menu && p.menu.length > 0 ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${p.menu.join(', ')}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> Nema podataka</p>'}
-                ${p.parking ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${p.parking}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> Nema podataka</p>'}
-                ${p.rating !== undefined ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${p.rating}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> Nema ocjene</p>'}
-                ${p.images && p.images[0] ? `<img src="${p.images[0]}" alt="${p.name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" data-ai-hint="location image" />` : ''}
+                <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${name}</h3>
+                <p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${menuItems}</p>
+                <p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${parkingInfo}</p>
+                <p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${ratingInfo}</p>
+                ${imageHtml}
               </div>
             `;
             layer.bindPopup(popupContent);
           },
           pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
-            return L.marker(latlng);
+            return L.marker(latlng); // Default marker
           }
         }).addTo(mapRef.current);
 
@@ -164,6 +175,7 @@ export function InteractiveMap() {
           mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1));
         }
       } else {
+         // No features, set a default view if map exists
          if (mapRef.current) {
             mapRef.current.setView([44.1, 15.2], 7); // Default view if no locations
          }
@@ -177,30 +189,30 @@ export function InteractiveMap() {
        if (mapRef.current) {
         setTimeout(() => {
           if (mapRef.current) {
-            mapRef.current.invalidateSize();
+            mapRef.current.invalidateSize(true); // Pass true to animate
           }
-        }, 150); // Slightly longer delay after data load
+        }, 300); // Increased delay
        }
     }
   }, [t]);
 
   // Effect for initial data load
   useEffect(() => {
-    if (isMounted && leafletLoaded && mapRef.current) {
+    if (isMounted && leafletLoaded && mapRef.current) { // Check if map is initialized
         loadLocations(true);
     }
-  }, [isMounted, leafletLoaded, mapRef, loadLocations]); // mapRef itself, not mapRef.current
+  }, [isMounted, leafletLoaded, mapRef, loadLocations]); // mapRef (the ref object itself) is stable
 
   // Effect for periodic refresh
   useEffect(() => {
-    if (!leafletLoaded || !mapRef.current) return;
+    if (!leafletLoaded || !mapRef.current) return; // Ensure map is initialized
     
     const intervalId = setInterval(() => {
-        loadLocations(false);
-    }, 60000);
+        loadLocations(false); // Pass false for subsequent loads
+    }, 60000); // Refresh every minute
     
     return () => clearInterval(intervalId);
-  }, [leafletLoaded, mapRef, loadLocations]); // mapRef itself, not mapRef.current
+  }, [leafletLoaded, mapRef, loadLocations]); // mapRef (the ref object itself) is stable
 
   useEffect(() => {
     setIsMounted(true);
@@ -215,7 +227,7 @@ export function InteractiveMap() {
             <CardHeader className="bg-background p-6">
                <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
             </CardHeader>
-            <CardContent className="p-0"> {/* Removed md:p-2 */}
+            <CardContent className="p-0">
               <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
@@ -259,14 +271,15 @@ export function InteractiveMap() {
             </CardHeader>
             <CardContent className="p-0"> {/* Ensure no padding here */}
               <div 
-                id="interactive-map-container-outer"
-                className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted" // Added rounded-b-lg if CardContent had padding before
+                id="interactive-map-container-outer" // Outer container for aspect ratio and overlays
+                className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted" 
               >
                 <div 
                   ref={mapContainerRef}
-                  id="interactive-map-container" 
-                  className="w-full h-full"
+                  id="interactive-map-container" // Leaflet initializes on this div
+                  className="w-full h-full" // Takes full size of its parent
                 />
+                {/* Overlays for loading and error states */}
                 {isLoading && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
