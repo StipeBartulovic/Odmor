@@ -70,10 +70,8 @@ export function InteractiveMap() {
   const { selectedLanguage } = useLanguage();
   const [isMounted, setIsMounted] = useState(false);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
-  // Locations state is not directly needed here anymore if Leaflet handles adding/removing layers
-  // const [locations, setLocations] = useState<GeoJSONFeatureCollection | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // True initially
 
   const mapRef = useRef<any>(null); // To store Leaflet map instance
   const geoLayerRef = useRef<any>(null); // To store GeoJSON layer instance
@@ -88,61 +86,68 @@ export function InteractiveMap() {
     [isMounted, selectedLanguage]
   );
 
-  const loadLocations = useCallback(async () => {
+  const loadLocations = useCallback(async (isInitialLoad = false) => {
     if (!leafletLoaded || !mapRef.current) return;
-    // Don't set isLoading true here if periodic refresh, to avoid flicker
-    // setIsLoading(true); 
+    
+    if (isInitialLoad) {
+      setIsLoading(true); // Show loader only for the very first load
+    }
+    // For subsequent refreshes, don't set isLoading to true to avoid loader flicker
     setError(null);
+
     try {
-      const response = await fetch('/api/locations');
+      // Use relative path for API call, works for local and deployed (Vercel)
+      const response = await fetch('/api/locations'); 
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch locations: ${response.status} ${errorText}`);
       }
       const data: GeoJSONFeatureCollection = await response.json();
-      // setLocations(data); // Not strictly needed if directly updating map layer
 
       if (geoLayerRef.current) {
         mapRef.current.removeLayer(geoLayerRef.current);
+        geoLayerRef.current = null;
       }
 
       if (data.features && data.features.length > 0) {
         geoLayerRef.current = L.geoJSON(data, {
           onEachFeature: (feature: GeoJSONFeature, layer: any) => {
             const p = feature.properties;
+            // Using the more detailed popup structure from your original component
             const popupContent = `
-              <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px;">
+              <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px; line-height: 1.4;">
                 <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${p.name}</h3>
-                ${p.menu ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${p.menu.join(', ')}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> Nema podataka</p>'}
+                ${p.menu && p.menu.length > 0 ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${p.menu.join(', ')}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> Nema podataka</p>'}
                 ${p.parking ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${p.parking}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> Nema podataka</p>'}
-                ${p.rating ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${p.rating}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> Nema ocjene</p>'}
+                ${p.rating !== undefined ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${p.rating}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> Nema ocjene</p>'}
                 ${p.images && p.images[0] ? `<img src="${p.images[0]}" alt="${p.name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" />` : ''}
               </div>
             `;
             layer.bindPopup(popupContent);
           },
           pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
+            // Standard marker, you can customize it later if needed
             return L.marker(latlng);
           }
         }).addTo(mapRef.current);
 
-        if (mapRef.current && geoLayerRef.current && geoLayerRef.current.getBounds().isValid()) {
-          // Fit map to bounds only if it's not the first load or if explicitly desired
-          // For periodic refresh, you might not want to change the view
-          // mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1));
+        // Fit map to bounds of all markers
+        if (geoLayerRef.current && geoLayerRef.current.getBounds().isValid()) {
+          mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1));
         }
       } else {
-         // If no features, clear existing layer if any
-        if (geoLayerRef.current) {
-            mapRef.current.removeLayer(geoLayerRef.current);
-            geoLayerRef.current = null; // Reset ref
+        // No features, maybe set a default view or message
+        if (mapRef.current && !isInitialLoad) { // Avoid resetting view if it's just a refresh with no data
+             // console.log("No locations to display, keeping current view.");
         }
       }
     } catch (err: any) {
-      console.error('Greška pri učitavanju lokacija:', err);
+      console.error('Error loading locations:', err);
       setError(t('errorLoading') + (err.message ? ` (${err.message})` : ''));
     } finally {
-      setIsLoading(false); // Set loading to false after first attempt
+      if (isInitialLoad) {
+        setIsLoading(false);
+      }
     }
   }, [leafletLoaded, t]);
 
@@ -161,31 +166,30 @@ export function InteractiveMap() {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19,
           }).addTo(mapRef.current);
-          loadLocations(); 
+          loadLocations(true); // Pass true for initial load
         } catch (e) {
           console.error("Leaflet map initialization error:", e);
           setError("Could not initialize map.");
           setIsLoading(false);
         }
-      } else if (mapElement && mapElement.hasChildNodes() && mapRef.current && !geoLayerRef.current) {
-        // If map was initialized but layer not added, attempt to load locations
-        loadLocations();
       }
     }
   }, [leafletLoaded, isMounted, loadLocations]);
 
   // Periodic refresh
   useEffect(() => {
-    if (!leafletLoaded || !mapRef.current) return; // Ensure map is initialized
+    if (!leafletLoaded || !mapRef.current || isLoading) return; // Don't refresh if map not ready or initial load in progress
+    
     const intervalId = setInterval(() => {
-        console.log("Refreshing locations...");
-        loadLocations();
+        // console.log("Periodically refreshing locations...");
+        loadLocations(false); // Pass false for subsequent refreshes
     }, 60000); // 60 seconds
+    
     return () => clearInterval(intervalId);
-  }, [loadLocations, leafletLoaded]);
+  }, [loadLocations, leafletLoaded, isLoading]);
 
 
-  if (!isMounted) {
+  if (!isMounted) { // SSR/Initial mount placeholder
     return (
       <section className="py-8 md:py-12 bg-muted/30">
         <div className="container mx-auto px-4">
@@ -195,8 +199,7 @@ export function InteractiveMap() {
             </CardHeader>
             <CardContent className="p-0 md:p-2">
               <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="ml-4 text-lg text-muted-foreground">{t('loading')}</p>
+                {/* Placeholder for map area */}
               </div>
             </CardContent>
           </Card>
@@ -219,9 +222,7 @@ export function InteractiveMap() {
         src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossOrigin=""
-        onLoad={() => {
-            setLeafletLoaded(true);
-        }}
+        onLoad={() => setLeafletLoaded(true)}
         onError={() => {
             console.error('Leaflet script failed to load.');
             setError('Failed to load map library.');
@@ -239,13 +240,13 @@ export function InteractiveMap() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-2">
-              {(isLoading && !mapRef.current) && !error && ( // Show loading only on initial load before map is ready
+              {isLoading && ( // Show loader only on initial load when mapRef might not be ready
                 <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   <p className="ml-4 text-lg text-muted-foreground">{t('loading')}</p>
                 </div>
               )}
-              {error && (
+              {error && !isLoading && ( // Show error if not loading
                  <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-destructive/10 text-destructive flex flex-col items-center justify-center p-4 text-center">
                     <p className="font-semibold">Map Error</p>
                     <p className="text-sm">{error}</p>
@@ -254,7 +255,8 @@ export function InteractiveMap() {
               <div 
                 id="interactive-map-container" 
                 className="aspect-[16/9] w-full rounded-lg overflow-hidden"
-                style={{ display: (isLoading && !mapRef.current) || error ? 'none' : 'block' }} 
+                // Hide container if initial loading or if error prevents map display
+                style={{ display: isLoading || (error && !mapRef.current) ? 'none' : 'block' }} 
               >
                 {/* Leaflet map will be mounted here */}
               </div>
