@@ -72,11 +72,11 @@ export function InteractiveMap() {
   const [isMounted, setIsMounted] = useState(false);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isLoading, setIsLoading] = useState(true);
 
-  const mapRef = useRef<any>(null);
-  const geoLayerRef = useRef<any>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null); // Holds the Leaflet map instance
+  const geoLayerRef = useRef<any>(null); // Holds the GeoJSON layer
+  const mapContainerRef = useRef<HTMLDivElement>(null); // Ref to the div where map is initialized
 
   const t = useCallback(
     (fieldKey: keyof typeof translations): string => {
@@ -88,42 +88,10 @@ export function InteractiveMap() {
     [isMounted, selectedLanguage]
   );
 
-  // Effect for initializing the map
-  useEffect(() => {
-    if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
-      try {
-        const mapInstance = L.map(mapContainerRef.current, {
-           preferCanvas: true, // Try canvas renderer
-        }).setView([44.1, 15.2], 8); // Default view
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        }).addTo(mapInstance);
-        
-        mapRef.current = mapInstance;
-
-        // Call invalidateSize after a short delay to ensure the container has its final dimensions
-        setTimeout(() => {
-          if (mapRef.current) {
-            mapRef.current.invalidateSize(true); // Pass true to animate
-          }
-        }, 250); // Increased delay
-
-        setIsLoading(true); // Set loading for initial data fetch, will be set to false in loadLocations
-      } catch (e) {
-        console.error("Leaflet map initialization error:", e);
-        setError("Could not initialize map.");
-        setIsLoading(false);
-      }
-    }
-  }, [leafletLoaded, isMounted]); // Only run when leaflet is loaded and component is mounted
-
-
   const loadLocations = useCallback(async (isInitialLoad = false) => {
-    if (!mapRef.current) { // Ensure map is initialized
-        if(isInitialLoad) setIsLoading(false);
-        return;
+    if (!mapRef.current) {
+      if(isInitialLoad) setIsLoading(false);
+      return;
     }
     
     if (isInitialLoad) {
@@ -132,12 +100,14 @@ export function InteractiveMap() {
     setError(null);
 
     try {
-      const response = await fetch('/api/locations'); // Fetches from your Next.js API route
+      const response = await fetch('/api/locations');
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch locations: ${response.status} ${errorText}`);
       }
       const data: GeoJSONFeatureCollection = await response.json();
+      // console.log('Fetched GeoJSON data:', JSON.stringify(data, null, 2));
+
 
       if (geoLayerRef.current) {
         mapRef.current.removeLayer(geoLayerRef.current);
@@ -148,7 +118,6 @@ export function InteractiveMap() {
         geoLayerRef.current = L.geoJSON(data, {
           onEachFeature: (feature: GeoJSONFeature, layer: any) => {
             const p = feature.properties;
-            // Sanitize properties before using them
             const name = p.name || 'Unknown Location';
             const menuItems = Array.isArray(p.menu) && p.menu.length > 0 ? p.menu.join(', ') : 'Nema podataka';
             const parkingInfo = p.parking || 'Nema podataka';
@@ -167,7 +136,7 @@ export function InteractiveMap() {
             layer.bindPopup(popupContent);
           },
           pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
-            return L.marker(latlng); // Default marker
+            return L.marker(latlng);
           }
         }).addTo(mapRef.current);
 
@@ -175,9 +144,8 @@ export function InteractiveMap() {
           mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1));
         }
       } else {
-         // No features, set a default view if map exists
          if (mapRef.current) {
-            mapRef.current.setView([44.1, 15.2], 7); // Default view if no locations
+            mapRef.current.setView([44.1, 15.2], 7);
          }
       }
     } catch (err: any) {
@@ -185,23 +153,61 @@ export function InteractiveMap() {
       setError(t('errorLoading') + (err.message ? ` (${err.message})` : ''));
     } finally {
        setIsLoading(false);
-       // Invalidate size after data load and potential fitBounds
        if (mapRef.current) {
+        // Ensure map recalculates its size after potential viewport changes (fitBounds, setView)
+        // or if data loading finishes.
         setTimeout(() => {
           if (mapRef.current) {
-            mapRef.current.invalidateSize(true); // Pass true to animate
+            mapRef.current.invalidateSize(true);
           }
-        }, 300); // Increased delay
+        }, 350); // Slightly increased timeout
        }
     }
   }, [t]);
 
-  // Effect for initial data load
+  // Effect for initializing the map
   useEffect(() => {
-    if (isMounted && leafletLoaded && mapRef.current) { // Check if map is initialized
-        loadLocations(true);
+    if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
+      try {
+        const mapInstance = L.map(mapContainerRef.current, {
+          preferCanvas: true,
+        }).setView([44.1, 15.2], 8);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+          // Keep existing options
+        }).addTo(mapInstance);
+        
+        mapRef.current = mapInstance;
+
+        // Use whenReady to ensure map has a size before further operations
+        mapInstance.whenReady(() => {
+          // Call invalidateSize after a short delay to ensure the container has its final dimensions
+          setTimeout(() => {
+            if (mapRef.current) { // Check again in case component unmounted
+              mapRef.current.invalidateSize(true);
+            }
+          }, 200); // Adjusted delay, can be experimented with
+
+          // Initial load of locations now happens after map is ready
+          loadLocations(true);
+        });
+
+      } catch (e) {
+        console.error("Leaflet map initialization error:", e);
+        setError("Could not initialize map.");
+        setIsLoading(false);
+      }
     }
-  }, [isMounted, leafletLoaded, mapRef, loadLocations]); // mapRef (the ref object itself) is stable
+    // Cleanup function to destroy map instance if component unmounts
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [leafletLoaded, isMounted, loadLocations]); // loadLocations added as dependency
 
   // Effect for periodic refresh
   useEffect(() => {
@@ -212,7 +218,7 @@ export function InteractiveMap() {
     }, 60000); // Refresh every minute
     
     return () => clearInterval(intervalId);
-  }, [leafletLoaded, mapRef, loadLocations]); // mapRef (the ref object itself) is stable
+  }, [leafletLoaded, loadLocations]); // loadLocations as dependency
 
   useEffect(() => {
     setIsMounted(true);
@@ -252,7 +258,9 @@ export function InteractiveMap() {
         src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossOrigin=""
-        onLoad={() => setLeafletLoaded(true)}
+        onLoad={() => {
+          setLeafletLoaded(true); // Set state when script is loaded
+        }}
         onError={() => {
             console.error('Leaflet script failed to load.');
             setError('Failed to load map library.');
@@ -278,16 +286,17 @@ export function InteractiveMap() {
                   ref={mapContainerRef}
                   id="interactive-map-container" // Leaflet initializes on this div
                   className="w-full h-full" // Takes full size of its parent
+                  style={{ background: isLoading || error ? 'hsl(var(--muted))' : 'transparent' }} // Show muted bg if map content not ready
                 />
                 {/* Overlays for loading and error states */}
                 {isLoading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm pointer-events-none">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
                     <p className="text-lg text-muted-foreground">{t('loading')}</p>
                   </div>
                 )}
                 {error && !isLoading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-10 p-4 text-center backdrop-blur-sm">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-10 p-4 text-center backdrop-blur-sm pointer-events-none">
                     <AlertTriangle className="h-10 w-10 mb-2" />
                     <p className="font-semibold">Map Error</p>
                     <p className="text-sm">{error}</p>
