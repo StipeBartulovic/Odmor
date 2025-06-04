@@ -1,43 +1,192 @@
+// src/components/sections/InteractiveMap.tsx
 'use client';
+
+import type { ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Head from 'next/head';
+import Script from 'next/script';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { ReactNode } from 'react';
-import { useState, useEffect } from 'react';
+
+// Define TypeScript interfaces for GeoJSON
+interface GeoJSONPoint {
+  type: 'Point';
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+interface GeoJSONFeatureProperties {
+  name: string;
+  menu?: string[];
+  parking?: string;
+  rating?: number;
+  images?: string[];
+  // Add any other properties you expect from your API
+}
+
+interface GeoJSONFeature {
+  type: 'Feature';
+  id?: string | number;
+  geometry: GeoJSONPoint;
+  properties: GeoJSONFeatureProperties;
+}
+
+interface GeoJSONFeatureCollection {
+  type: 'FeatureCollection';
+  features: GeoJSONFeature[];
+}
 
 const translations = {
   mapTitle: {
-    en: 'Trip Highlights Map',
-    it: 'Mappa dei Momenti Salienti del Viaggio',
-    de: 'Karte der Reisehöhepunkte',
-    pl: 'Mapa Najciekawszych Punktów Podróży',
-    fr: 'Carte des Points Forts du Voyage',
-    es: 'Mapa de los Puntos Destacados del Viaje',
+    en: 'Interactive Locations Map',
+    it: 'Mappa Interattiva delle Località',
+    de: 'Interaktive Ortskarte',
+    pl: 'Interaktywna Mapa Lokalizacji',
+    fr: 'Carte Interactive des Lieux',
+    es: 'Mapa Interactivo de Ubicaciones',
   },
   loading: {
-    en: 'Loading map...',
-    it: 'Caricamento mappa...',
-    de: 'Lade Karte...',
-    pl: 'Ładowanie mapy...',
-    fr: 'Chargement de la carte...',
-    es: 'Cargando mapa...',
-  }
+    en: 'Loading map & locations...',
+    it: 'Caricamento mappa e località...',
+    de: 'Lade Karte & Standorte...',
+    pl: 'Ładowanie mapy i lokalizacji...',
+    fr: 'Chargement de la carte et des lieux...',
+    es: 'Cargando mapa y ubicaciones...',
+  },
+  errorLoading: {
+    en: 'Error loading locations. Please try again later.',
+    it: 'Errore durante il caricamento delle località. Riprova più tardi.',
+    de: 'Fehler beim Laden der Standorte. Bitte versuchen Sie es später erneut.',
+    pl: 'Błąd podczas ładowania lokalizacji. Spróbuj ponownie później.',
+    fr: 'Erreur lors du chargement des lieux. Veuillez réessayer plus tard.',
+    es: 'Error al cargar las ubicaciones. Inténtalo de nuevo más tarde.',
+  },
 };
+
+// Declare Leaflet 'L' type for global scope (available after script load)
+declare var L: any;
 
 export function InteractiveMap() {
   const { selectedLanguage } = useLanguage();
   const [isMounted, setIsMounted] = useState(false);
+  const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [locations, setLocations] = useState<GeoJSONFeatureCollection | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const mapRef = useRef<any>(null); // To store Leaflet map instance
+  const geoLayerRef = useRef<any>(null); // To store GeoJSON layer instance
+
+  const t = useCallback(
+    (fieldKey: keyof typeof translations): string => {
+      const langToUse = isMounted ? selectedLanguage : 'en';
+      // @ts-ignore
+      const translation = translations[fieldKey]?.[langToUse] || translations[fieldKey]?.['en'];
+      return typeof translation === 'string' ? translation : String(fieldKey);
+    },
+    [isMounted, selectedLanguage]
+  );
+
+  const loadLocations = useCallback(async () => {
+    if (!leafletLoaded || !mapRef.current) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/locations');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch locations: ${response.statusText}`);
+      }
+      const data: GeoJSONFeatureCollection = await response.json();
+      setLocations(data);
+
+      if (geoLayerRef.current) {
+        mapRef.current.removeLayer(geoLayerRef.current);
+      }
+
+      if (data.features && data.features.length > 0) {
+        geoLayerRef.current = L.geoJSON(data, {
+          onEachFeature: (feature: GeoJSONFeature, layer: any) => {
+            const p = feature.properties;
+            const popupContent = `
+              <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px;">
+                <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${p.name}</h3>
+                ${p.menu ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${p.menu.join(', ')}</p>` : ''}
+                ${p.parking ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${p.parking}</p>` : ''}
+                ${p.rating ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${p.rating}</p>` : ''}
+                ${p.images && p.images[0] ? `<img src="${p.images[0]}" alt="${p.name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" />` : ''}
+              </div>
+            `;
+            layer.bindPopup(popupContent);
+          },
+          pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
+             // Custom marker using a DivIcon for more styling control if needed, or default marker
+            return L.marker(latlng);
+          }
+        }).addTo(mapRef.current);
+
+        // Fit map to bounds of all features if there are any
+        if (geoLayerRef.current.getBounds().isValid()) {
+            mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1)); // pad adds some margin
+        } else if (data.features.length === 1) {
+            // If only one feature, set view to it with a specific zoom
+            mapRef.current.setView(data.features[0].geometry.coordinates.slice().reverse(), 13); // Leaflet expects [lat, lng]
+        }
+
+      } else {
+        // If no features, perhaps set a default view or message
+        mapRef.current.setView([44.1, 15.2], 10); // Default view if no locations
+      }
+
+    } catch (err) {
+      console.error('Greška pri učitavanju lokacija:', err);
+      setError(t('errorLoading'));
+      if (err instanceof Error) {
+         setError(`${t('errorLoading')} Details: ${err.message}`);
+      } else {
+         setError(t('errorLoading'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [leafletLoaded, t]);
+
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  
-  const t = (fieldKey: keyof typeof translations): string => {
-    const langToUse = isMounted ? selectedLanguage : 'en';
-    // @ts-ignore
-    return translations[fieldKey][langToUse] || translations[fieldKey]['en'];
-  };
-  
+
+  // Initialize map when Leaflet is loaded
+  useEffect(() => {
+    if (leafletLoaded && isMounted && !mapRef.current) {
+      try {
+        const mapElement = document.getElementById('interactive-map-container');
+        if (mapElement && !mapElement.hasChildNodes()) { // Ensure map is not already initialized
+            mapRef.current = L.map('interactive-map-container').setView([44.1, 15.2], 10); // Default: Croatia
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19,
+            }).addTo(mapRef.current);
+            loadLocations(); // Initial load
+        } else if (mapElement && mapElement.hasChildNodes() && mapRef.current) {
+            // If map was initialized but something went wrong with layer, try loading locations again
+            loadLocations();
+        }
+      } catch (e) {
+        console.error("Leaflet map initialization error:", e);
+        setError("Could not initialize map.");
+        setIsLoading(false);
+      }
+    }
+  }, [leafletLoaded, isMounted, loadLocations]);
+
+  // Periodic refresh
+  useEffect(() => {
+    if (!leafletLoaded) return;
+    const intervalId = setInterval(loadLocations, 60000); // 60 seconds
+    return () => clearInterval(intervalId);
+  }, [loadLocations, leafletLoaded]);
+
+
   if (!isMounted) {
     return (
       <section className="py-8 md:py-12 bg-muted/30">
@@ -58,35 +207,64 @@ export function InteractiveMap() {
     );
   }
 
-  const localizedMapTitle: ReactNode = t('mapTitle');
-
   return (
-    <section className="py-8 md:py-12 bg-muted/30">
-      <div className="container mx-auto px-4">
-        <Card className="shadow-xl rounded-xl overflow-hidden">
-          <CardHeader className="bg-background p-6">
-            <CardTitle className="text-2xl md:text-3xl font-semibold text-primary flex items-center gap-2">
-              <MapPin className="h-8 w-8" />
-              {localizedMapTitle}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 md:p-2">
-            <div className="aspect-[16/9] w-full rounded-lg overflow-hidden">
-              <iframe
-                src="https://www.google.com/maps/d/u/0/embed?mid=1sIFXUnr021_gfhcgthkZ2xSdAGnGl2Q&ehbc=2E312F"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen={false}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title={typeof localizedMapTitle === 'string' ? localizedMapTitle : 'Trip Highlights Map'} 
-                className="w-full h-full"
-              ></iframe>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </section>
+    <>
+      <Head>
+        <link
+          rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossOrigin=""
+        />
+      </Head>
+      <Script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossOrigin=""
+        onLoad={() => {
+            console.log('Leaflet script loaded.');
+            setLeafletLoaded(true);
+        }}
+        onError={() => {
+            console.error('Leaflet script failed to load.');
+            setError('Failed to load map library.');
+            setIsLoading(false);
+        }}
+        strategy="afterInteractive" // Load after the page is interactive
+      />
+      <section className="py-8 md:py-12 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <Card className="shadow-xl rounded-xl overflow-hidden">
+            <CardHeader className="bg-background p-6">
+              <CardTitle className="text-2xl md:text-3xl font-semibold text-primary flex items-center gap-2">
+                <MapPin className="h-8 w-8" />
+                {t('mapTitle')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 md:p-2">
+              {isLoading && !error && (
+                <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  <p className="ml-4 text-lg text-muted-foreground">{t('loading')}</p>
+                </div>
+              )}
+              {error && (
+                 <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-destructive/10 text-destructive flex flex-col items-center justify-center p-4">
+                    <p className="font-semibold">Map Error</p>
+                    <p className="text-sm">{error}</p>
+                 </div>
+              )}
+              <div 
+                id="interactive-map-container" 
+                className="aspect-[16/9] w-full rounded-lg overflow-hidden"
+                style={{ display: isLoading || error ? 'none' : 'block' }} // Hide while loading/error to prevent unstyled map flash
+              >
+                {/* Leaflet map will be mounted here */}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    </>
   );
 }
