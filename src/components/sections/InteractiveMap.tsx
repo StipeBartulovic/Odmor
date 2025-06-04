@@ -79,8 +79,8 @@ export function InteractiveMap() {
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLoadingMap, setIsLoadingMap] = useState(true);
 
-  const mapRef = useRef<any>(null); // Holds the Leaflet map instance
-  const mapContainerRef = useRef<HTMLDivElement>(null); // Ref for the map container div
+  const mapRef = useRef<any>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const t = useCallback(
     (fieldKey: keyof typeof translations): string => {
@@ -100,61 +100,60 @@ export function InteractiveMap() {
     if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
       setIsLoadingMap(true);
       setMapError(null);
-      try {
-        // Initialize Leaflet map
-        const mapInstance = L.map(mapContainerRef.current, {
-          // preferCanvas: true, // Option to consider if rendering issues persist
-        }).setView([44.1, 15.2], 8); // Initial center (Croatia) and zoom level
 
-        // Add OpenStreetMap tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-          tileSize: 256, // Default tile size
-          zoomOffset: 0,
-        }).on('tileerror', (tileErrorEvent: any) => {
-            console.error('Tile loading error:', tileErrorEvent.error, tileErrorEvent.tile);
-            setMapError(t('tileError'));
-            // Do not setIsLoadingMap(false) here, let whenReady handle it or a general timeout
-        }).addTo(mapInstance);
-        
-        mapRef.current = mapInstance;
+      // Delay Leaflet initialization to ensure DOM is fully ready
+      const timerId = setTimeout(() => {
+        if (mapContainerRef.current && !mapRef.current) { // Double check refs before init
+          try {
+            console.log('Attempting Leaflet map initialization inside setTimeout...');
+            const mapInstance = L.map(mapContainerRef.current, {
+              // preferCanvas: true, // Optional: Can try re-enabling if issues persist
+            }).setView([44.1, 15.2], 8); // Initial center (Croatia) and zoom level
 
-        // Ensure map size is recalculated after initialization
-        mapInstance.whenReady(() => {
-          console.log("Map is ready. Invalidating size with requestAnimationFrame.");
-          requestAnimationFrame(() => {
-            if (mapRef.current) {
-              mapRef.current.invalidateSize(true);
-               // Fallback with setTimeout as sometimes rAF might not be enough if layout is still settling
-              setTimeout(() => {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+              maxZoom: 19,
+              tileSize: 256,
+              zoomOffset: 0,
+            }).on('tileerror', (tileErrorEvent: any) => {
+                console.error('Tile loading error:', tileErrorEvent.error, tileErrorEvent.tile);
+                setMapError(t('tileError'));
+            }).addTo(mapInstance);
+            
+            mapRef.current = mapInstance;
+
+            mapInstance.whenReady(() => {
+              console.log("Map is ready. Invalidating size with requestAnimationFrame.");
+              requestAnimationFrame(() => {
                 if (mapRef.current) {
                   mapRef.current.invalidateSize(true);
-                  console.log("Map invalidated with setTimeout fallback after rAF.");
+                  console.log("Map size invalidated via rAF.");
                 }
-              }, 100); // Small delay
-            }
-          });
-          setIsLoadingMap(false); // Map is ready
-        });
+              });
+              setIsLoadingMap(false); 
+            });
 
-      } catch (e:any) {
-        console.error("Leaflet map initialization error:", e);
-        setMapError(t('errorLoadingMap') + (e.message ? ` (${e.message})` : ''));
-        setIsLoadingMap(false);
-      }
+          } catch (e:any) {
+            console.error("Leaflet map initialization error inside setTimeout:", e);
+            setMapError(t('errorLoadingMap') + (e.message ? ` (${e.message})` : ''));
+            setIsLoadingMap(false);
+          }
+        }
+      }, 0); // setTimeout with 0ms delay
+
+      return () => {
+        clearTimeout(timerId); // Clear timeout on cleanup
+        if (mapRef.current) {
+          mapRef.current.remove();
+          mapRef.current = null;
+          console.log("Leaflet map instance removed on cleanup.");
+        }
+      };
     }
-    
-    // Cleanup function to remove the map instance when the component unmounts
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        console.log("Leaflet map instance removed.");
-      }
-    };
-  }, [leafletLoaded, isMounted, t]); // t is a dependency for error messages
+  }, [leafletLoaded, isMounted, t]);
 
+
+  // Placeholder for SSR and initial client render
   if (!isMounted) { 
     return (
       <section className="py-8 md:py-12 bg-muted/30">
@@ -163,7 +162,7 @@ export function InteractiveMap() {
             <CardHeader className="bg-background p-6">
                <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0"> {/* Ensure no padding on direct parent of map container */}
               <div className="w-full bg-muted flex items-center justify-center" style={{height: '500px'}}>
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
@@ -181,7 +180,7 @@ export function InteractiveMap() {
           rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossOrigin="" 
+          crossOrigin="anonymous" 
         />
       </Head>
       <Script
@@ -192,8 +191,8 @@ export function InteractiveMap() {
           setLeafletLoaded(true);
           console.log("Leaflet script loaded.");
         }}
-        onError={() => {
-            console.error('Leaflet script failed to load.');
+        onError={(e) => {
+            console.error('Leaflet script failed to load:', e);
             setMapError('Failed to load map library.');
             setIsLoadingMap(false);
         }}
@@ -211,15 +210,11 @@ export function InteractiveMap() {
             <CardContent className="p-0"> {/* Ensure no padding on direct parent of map container */}
               <div 
                 id="interactive-map-container-outer" 
-                className="w-full rounded-b-lg overflow-hidden relative bg-muted" 
-                // Using aspect-ratio to define height for the outer container
-                // Alternatively, a fixed height class like 'h-[500px]' could be used here
+                className="w-full rounded-b-lg overflow-hidden relative bg-muted"
               >
                 <div 
                   ref={mapContainerRef}
                   id="interactive-map-container" 
-                  // Map container takes full width and an explicit height.
-                  // This fixed height is crucial for Leaflet initialization.
                   style={{ 
                     width: '100%',
                     height: '500px', // Explicit fixed height
@@ -228,7 +223,7 @@ export function InteractiveMap() {
                   }}
                 />
                 {/* Loading Indicator */}
-                {(isLoadingMap && leafletLoaded && !mapRef.current) && ( // Show only if Leaflet is loaded but map not yet initialized
+                {(isLoadingMap && leafletLoaded) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm pointer-events-none">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
                     <p className="text-lg text-muted-foreground">{t('loading')}</p>
