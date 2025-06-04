@@ -20,12 +20,12 @@ export interface GeoJSONPoint {
 
 export interface GeoJSONFeatureProperties {
   name: string;
-  description?: string; // General description
+  description?: string;
   menu?: string[];
   parking?: string;
   rating?: number;
   images?: string[];
-  [key: string]: any; // Allow other properties
+  [key: string]: any;
 }
 
 export interface GeoJSONFeature {
@@ -112,7 +112,7 @@ export function InteractiveMap() {
   const [mapboxLoaded, setMapboxLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLoadingMap, setIsLoadingMap] = useState(true);
-  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false); // Not used with static data, but keep for structure
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
@@ -131,98 +131,95 @@ export function InteractiveMap() {
   );
 
   const loadLocations = useCallback(async (map: mapboxgl.Map) => {
-    setIsLoadingLocations(true);
+    setIsLoadingLocations(true); // Keep for consistency, though loading is instant
     setMapError(null);
     try {
-      const response = await fetch('/api/locations');
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch locations: ${response.status} ${errorText}`);
-      }
-      const data: GeoJSONFeatureCollection = await response.json();
+      // Use a minimal, static GeoJSON source
+      const staticGeoJsonData: GeoJSONFeatureCollection = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [16.440193, 43.508133], // Example: Split, Croatia
+            },
+            properties: {
+              name: 'Test Location',
+              description: 'This is a hardcoded test location.',
+            },
+          },
+        ],
+      };
 
-      if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
-        console.warn('Invalid or empty GeoJSON data received:', data);
-        if (map.getSource('locations-data')) {
-          (map.getSource('locations-data') as mapboxgl.GeoJSONSource).setData({ type: 'FeatureCollection', features: [] });
-        }
-        // Don't throw an error for empty valid GeoJSON, just show an empty map.
-        // throw new Error('Invalid GeoJSON data format');
-        return;
-      }
-      
       if (map.getSource('locations-data')) {
-        (map.getSource('locations-data') as mapboxgl.GeoJSONSource).setData(data);
+        (map.getSource('locations-data') as mapboxgl.GeoJSONSource).setData(staticGeoJsonData);
       } else {
         map.addSource('locations-data', {
           type: 'geojson',
-          data: data,
+          data: staticGeoJsonData,
         });
       }
 
-      if (!map.getLayer('location-points')) {
-        map.addLayer({
-          id: 'location-points',
-          type: 'circle',
-          source: 'locations-data',
-          paint: {
-            'circle-radius': 8,
-            'circle-color': 'hsl(var(--primary))',
-            'circle-stroke-width': 2,
-            'circle-stroke-color': 'hsl(var(--background))',
-          },
-        });
+      // Ensure source is added before adding layer
+      if (map.getSource('locations-data')) {
+        if (!map.getLayer('location-points')) {
+          map.addLayer({
+            id: 'location-points',
+            type: 'circle',
+            source: 'locations-data',
+            paint: {
+              'circle-radius': 10, // Increased radius for visibility
+              'circle-color': '#FF0000', // Bright red color
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#FFFFFF', // White stroke
+            },
+          });
 
-        map.on('mouseenter', 'location-points', () => {
-          map.getCanvas().style.cursor = 'pointer';
-        });
+          map.on('mouseenter', 'location-points', () => {
+            map.getCanvas().style.cursor = 'pointer';
+          });
 
-        map.on('mouseleave', 'location-points', () => {
-          map.getCanvas().style.cursor = '';
-        });
+          map.on('mouseleave', 'location-points', () => {
+            map.getCanvas().style.cursor = '';
+          });
 
-        map.on('click', 'location-points', (e: mapboxgl.MapLayerMouseEvent) => {
-          if (popupRef.current) {
-            popupRef.current.remove();
-          }
-          if (!e.features || e.features.length === 0) return;
+          map.on('click', 'location-points', (e: mapboxgl.MapLayerMouseEvent) => {
+            if (popupRef.current) {
+              popupRef.current.remove();
+            }
+            if (!e.features || e.features.length === 0) return;
 
-          const feature = e.features[0] as unknown as GeoJSONFeature; // Cast to our GeoJSONFeature
-          const coordinates = (feature.geometry as GeoJSONPoint).coordinates.slice() as [number, number];
-          const props = feature.properties as GeoJSONFeatureProperties;
+            const feature = e.features[0] as unknown as GeoJSONFeature;
+            const coordinates = (feature.geometry as GeoJSONPoint).coordinates.slice() as [number, number];
+            const props = feature.properties as GeoJSONFeatureProperties;
 
-          // Ensure longitude/latitude are numbers
-          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-          }
-          
-          const name = props.name || 'Unknown Location';
-          const menuItems = Array.isArray(props.menu) && props.menu.length > 0 ? props.menu.join(', ') : 'N/A';
-          const parkingInfo = props.parking || 'N/A';
-          const ratingInfo = props.rating !== undefined ? `${props.rating}/5` : 'N/A';
-          const imageHtml = Array.isArray(props.images) && props.images[0] 
-            ? `<img src="${props.images[0]}" alt="${name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" data-ai-hint="location image" />` 
-            : '';
-
-          const popupContent = `
-            <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px; line-height: 1.4;">
-              <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${name}</h3>
-              ${props.description ? `<p style="margin: 4px 0; font-size: 0.9em;">${props.description}</p>` : ''}
-              <p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${menuItems}</p>
-              <p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${parkingInfo}</p>
-              <p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${ratingInfo}</p>
-              ${imageHtml}
-            </div>
-          `;
-          
-          popupRef.current = new window.mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: true })
-            .setLngLat(coordinates)
-            .setHTML(popupContent)
-            .addTo(map);
-        });
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+              coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
+            
+            const name = props.name || 'Unknown Location';
+            const description = props.description || 'No description available.';
+            
+            const popupContent = `
+              <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px; line-height: 1.4;">
+                <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${name}</h3>
+                <p style="margin: 4px 0; font-size: 0.9em;">${description}</p>
+              </div>
+            `;
+            
+            popupRef.current = new window.mapboxgl.Popup({ offset: 25, closeButton: true, closeOnClick: true })
+              .setLngLat(coordinates)
+              .setHTML(popupContent)
+              .addTo(map);
+          });
+        }
+      } else {
+        console.warn('Source locations-data could not be verified on map.');
       }
+
     } catch (err: any) {
-      console.error('Error loading locations:', err);
+      console.error('Error in loadLocations with static data:', err);
       setMapError(t('errorLoadingLocations') + (err.message ? ` (${err.message})` : ''));
     } finally {
       setIsLoadingLocations(false);
@@ -250,36 +247,43 @@ export function InteractiveMap() {
         const map = new window.mapboxgl.Map({
           container: mapContainerRef.current!,
           style: 'mapbox://styles/stipe331/cmayj3i9b009z01s6bq1j0rj1',
-          center: [16.440193, 43.508133],
-          zoom: 7,
+          center: [16.440193, 43.508133], // Centered on Split
+          zoom: 10, // Zoomed in a bit more
         });
 
         map.on('load', () => {
           mapInstanceRef.current = map;
           setIsLoadingMap(false);
           map.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
-          map.addControl(new window.mapboxgl.FullscreenControl());
+          // Fullscreen control will be re-added later if needed
           
-          loadLocations(map); // Load locations once map is ready
+          loadLocations(map); 
         });
 
         map.on('error', (e) => {
-          console.error('Mapbox GL JS error:', e);
-          setMapError(t('errorLoadingMap') + (e.error?.message ? ` (${e.error.message})` : ''));
+          // Log the full error object from Mapbox if available
+          console.error('Mapbox GL JS error event:', e);
+          const message = e.error?.message || 'Unknown Mapbox error';
+          setMapError(t('errorLoadingMap') + ` (${message})`);
           setIsLoadingMap(false);
         });
         
         const resizeObserver = new ResizeObserver(() => {
-          map.resize();
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.resize();
+          }
         });
         if(mapContainerRef.current) {
           resizeObserver.observe(mapContainerRef.current);
         }
         
-        const windowResizeHandler = () => map.resize();
+        const windowResizeHandler = () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.resize();
+            }
+        };
         window.addEventListener('resize', windowResizeHandler);
 
-        // Cleanup function
         return () => {
           if (mapInstanceRef.current) {
             mapInstanceRef.current.remove();
@@ -303,26 +307,27 @@ export function InteractiveMap() {
     }
   }, [mapboxLoaded, isMounted, t, MAPBOX_ACCESS_TOKEN, loadLocations]);
 
+
   const toggleFullscreen = useCallback(() => {
     if (!mapContainerRef.current || !mapInstanceRef.current) return;
 
-    const mapDiv = mapContainerRef.current.parentElement; // The one with aspect ratio
-    if (!mapDiv) return;
+    const mapOuterDiv = mapContainerRef.current.parentElement; 
+    if (!mapOuterDiv) return;
 
     if (!isFullscreen) {
-      if (mapDiv.requestFullscreen) {
-        mapDiv.requestFullscreen();
-      } else if ((mapDiv as any).webkitRequestFullscreen) { /* Safari */
-        (mapDiv as any).webkitRequestFullscreen();
-      } else if ((mapDiv as any).msRequestFullscreen) { /* IE11 */
-        (mapDiv as any).msRequestFullscreen();
+      if (mapOuterDiv.requestFullscreen) {
+        mapOuterDiv.requestFullscreen();
+      } else if ((mapOuterDiv as any).webkitRequestFullscreen) { 
+        (mapOuterDiv as any).webkitRequestFullscreen();
+      } else if ((mapOuterDiv as any).msRequestFullscreen) { 
+        (mapOuterDiv as any).msRequestFullscreen();
       }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
-      } else if ((document as any).webkitExitFullscreen) { /* Safari */
+      } else if ((document as any).webkitExitFullscreen) { 
         (document as any).webkitExitFullscreen();
-      } else if ((document as any).msExitFullscreen) { /* IE11 */
+      } else if ((document as any).msExitFullscreen) { 
         (document as any).msExitFullscreen();
       }
     }
@@ -333,7 +338,6 @@ export function InteractiveMap() {
       const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement || (document as any).msFullscreenElement);
       setIsFullscreen(isCurrentlyFullscreen);
       if (mapInstanceRef.current) {
-        // Wait for CSS transitions and then invalidate size
         setTimeout(() => mapInstanceRef.current?.resize(), 100);
       }
     };
@@ -361,7 +365,7 @@ export function InteractiveMap() {
               <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="aspect-[16/9] w-full bg-muted flex items-center justify-center" style={{ height: '500px' }}>
+              <div className="w-full bg-muted flex items-center justify-center" style={{ height: '500px' }}>
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
             </CardContent>
@@ -405,14 +409,14 @@ export function InteractiveMap() {
             <CardContent className="p-0">
               <div
                 id="interactive-map-container-outer"
-                className="w-full rounded-b-lg overflow-hidden relative bg-muted"
-                style={{ height: '500px' }} 
+                className={`w-full rounded-b-lg overflow-hidden relative bg-muted ${isFullscreen ? 'fixed inset-0 z-50 !rounded-none' : ''}`}
+                style={!isFullscreen ? { height: '500px' } : {}} 
               >
                 <Button 
                     variant="outline" 
                     size="icon" 
                     onClick={toggleFullscreen} 
-                    className="absolute top-2 right-12 z-10 bg-background/80 hover:bg-background"
+                    className="absolute top-2 right-12 z-[60] bg-background/80 hover:bg-background" // Increased z-index
                     aria-label={isFullscreen ? t('fullscreenExit') : t('fullscreenEnter')}
                     title={isFullscreen ? t('fullscreenExit') : t('fullscreenEnter')}
                 >
@@ -421,16 +425,16 @@ export function InteractiveMap() {
                 <div
                   ref={mapContainerRef}
                   id="interactive-map-container"
-                  className="w-full h-full"
+                  className={`w-full ${isFullscreen ? 'h-screen' : 'h-full'}`}
                 />
-                {(isLoadingMap || isLoadingLocations) && !mapError && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-20 backdrop-blur-sm pointer-events-none">
+                {(isLoadingMap) && !mapError && ( // Show loader only for map loading
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-[70] backdrop-blur-sm pointer-events-none">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
                     <p className="text-lg text-muted-foreground">{t('loading')}</p>
                   </div>
                 )}
                 {mapError && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-20 p-4 text-center backdrop-blur-sm pointer-events-none">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-[70] p-4 text-center backdrop-blur-sm pointer-events-none">
                     <AlertTriangle className="h-10 w-10 mb-2" />
                     <p className="font-semibold">Map Error</p>
                     <p className="text-sm">{mapError}</p>
@@ -444,5 +448,3 @@ export function InteractiveMap() {
     </>
   );
 }
-
-    
