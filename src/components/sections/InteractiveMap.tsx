@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-// Define TypeScript interfaces for GeoJSON (ostavljamo ih za kasnije)
+// Define TypeScript interfaces for GeoJSON
 export interface GeoJSONPoint {
   type: 'Point';
   coordinates: [number, number]; // [longitude, latitude]
@@ -46,12 +46,12 @@ const translations = {
     es: 'Mapa Interactivo de Ubicaciones',
   },
   loading: {
-    en: 'Loading map...',
-    it: 'Caricamento mappa...',
-    de: 'Lade Karte...',
-    pl: 'Ładowanie mapy...',
-    fr: 'Chargement de la carte...',
-    es: 'Cargando mapa...',
+    en: 'Loading map & locations...',
+    it: 'Caricamento mappa e località...',
+    de: 'Lade Karte & Standorte...',
+    pl: 'Ładowanie mapy i lokalizacji...',
+    fr: 'Chargement de la carte et des lieux...',
+    es: 'Cargando mapa y ubicaciones...',
   },
   errorLoading: {
     en: 'Error loading locations. Please try again later.',
@@ -82,7 +82,7 @@ export function InteractiveMap() {
   const [isLoading, setIsLoading] = useState(true);
 
   const mapRef = useRef<any>(null); // Holds the Leaflet map instance
-  // const geoLayerRef = useRef<any>(null); // Holds the GeoJSON layer - Sakriveno
+  // const geoLayerRef = useRef<any>(null); // Holds the GeoJSON layer
   const mapContainerRef = useRef<HTMLDivElement>(null); // Ref to the div where map is initialized
 
   const t = useCallback(
@@ -95,7 +95,7 @@ export function InteractiveMap() {
     [isMounted, selectedLanguage]
   );
 
-  // Funkcija za dohvaćanje lokacija - SAKRIVENA ZA TESTIRANJE OSNOVNE MAPE
+  // Minimal loadLocations - commented out for basic map test
   // const loadLocations = useCallback(async (isInitialLoad = false) => {
   //   if (!mapRef.current) {
   //     if(isInitialLoad) setIsLoading(false);
@@ -108,91 +108,100 @@ export function InteractiveMap() {
   //   setError(null); 
 
   //   try {
-  //     const response = await fetch('/api/locations');
-  //     if (!response.ok) {
-  //       const errorText = await response.text();
-  //       throw new Error(`Failed to fetch locations: ${response.status} ${errorText}`);
-  //     }
-  //     const data: GeoJSONFeatureCollection = await response.json();
-  //     console.log('Fetched GeoJSON data:', JSON.stringify(data, null, 2));
+  //     // const response = await fetch('/api/locations');
+  //     // if (!response.ok) {
+  //     //   const errorText = await response.text();
+  //     //   throw new Error(`Failed to fetch locations: ${response.status} ${errorText}`);
+  //     // }
+  //     // const data: GeoJSONFeatureCollection = await response.json();
+  //     // console.log('Fetched GeoJSON data:', JSON.stringify(data, null, 2));
 
-  //     // Validate GeoJSON
-  //     if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
-  //       throw new Error('Invalid GeoJSON data received from API.');
-  //     }
-  //     data.features.forEach((feature, index) => {
-  //       if (
-  //         !feature || feature.type !== 'Feature' ||
-  //         !feature.geometry || feature.geometry.type !== 'Point' ||
-  //         !Array.isArray(feature.geometry.coordinates) ||
-  //         feature.geometry.coordinates.length !== 2 ||
-  //         typeof feature.geometry.coordinates[0] !== 'number' || 
-  //         typeof feature.geometry.coordinates[1] !== 'number'    
-  //       ) {
-  //         console.warn(`Invalid GeoJSON feature at index ${index}:`, feature);
-  //       }
-  //     });
+  //     // // Validate GeoJSON data
+  //     // if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
+  //     //   console.error('Invalid GeoJSON data received from API.');
+  //     //   throw new Error('Invalid GeoJSON data received from API.');
+  //     // }
+  //     // data.features.forEach((feature, index) => {
+  //     //   if (
+  //     //     !feature || feature.type !== 'Feature' ||
+  //     //     !feature.geometry || feature.geometry.type !== 'Point' ||
+  //     //     !Array.isArray(feature.geometry.coordinates) ||
+  //     //     feature.geometry.coordinates.length !== 2 ||
+  //     //     typeof feature.geometry.coordinates[0] !== 'number' || 
+  //     //     typeof feature.geometry.coordinates[1] !== 'number'    
+  //     //   ) {
+  //     //     console.warn(`Invalid GeoJSON feature at index ${index}:`, feature);
+  //     //     // Optionally throw an error or filter out invalid features
+  //     //   }
+  //     // });
 
 
-  //     if (geoLayerRef.current) {
-  //       mapRef.current.removeLayer(geoLayerRef.current);
-  //       geoLayerRef.current = null;
-  //     }
+  //     // if (geoLayerRef.current) {
+  //     //   mapRef.current.removeLayer(geoLayerRef.current);
+  //     //   geoLayerRef.current = null;
+  //     // }
 
-  //     if (data.features && data.features.length > 0) {
-  //       geoLayerRef.current = L.geoJSON(data, {
-  //         onEachFeature: (feature: GeoJSONFeature, layer: any) => {
-  //           const p = feature.properties;
-  //           const name = p.name || 'Unknown Location';
-  //           const menuItems = Array.isArray(p.menu) && p.menu.length > 0 ? p.menu.join(', ') : 'Nema podataka';
-  //           const parkingInfo = p.parking || 'Nema podataka';
-  //           const ratingInfo = p.rating !== undefined ? String(p.rating) : 'Nema ocjene';
-  //           const imageHtml = Array.isArray(p.images) && p.images[0] ? `<img src="${p.images[0]}" alt="${name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" data-ai-hint="location image" />` : '';
+  //     // if (data.features && data.features.length > 0) {
+  //     //   geoLayerRef.current = L.geoJSON(data, {
+  //     //     onEachFeature: (feature: GeoJSONFeature, layer: any) => {
+  //     //       const p = feature.properties;
+  //     //       const name = p.name || 'Unknown Location';
+  //     //       const menuItems = Array.isArray(p.menu) && p.menu.length > 0 ? p.menu.join(', ') : 'Nema podataka';
+  //     //       const parkingInfo = p.parking || 'Nema podataka';
+  //     //       const ratingInfo = p.rating !== undefined ? String(p.rating) : 'Nema ocjene';
+  //     //       const imageHtml = Array.isArray(p.images) && p.images[0] ? `<img src="${p.images[0]}" alt="${name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" data-ai-hint="location image" />` : '';
 
-  //           const popupContent = `
-  //             <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px; line-height: 1.4;">
-  //               <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${name}</h3>
-  //               <p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${menuItems}</p>
-  //               <p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${parkingInfo}</p>
-  //               <p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${ratingInfo}</p>
-  //               ${imageHtml}
-  //             </div>
-  //           `;
-  //           layer.bindPopup(popupContent);
-  //         },
-  //         pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
-  //           return L.marker(latlng); 
-  //         }
-  //       }).addTo(mapRef.current);
+  //     //       const popupContent = `
+  //     //         <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px; line-height: 1.4;">
+  //     //           <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${name}</h3>
+  //     //           <p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${menuItems}</p>
+  //     //           <p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${parkingInfo}</p>
+  //     //           <p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${ratingInfo}</p>
+  //     //           ${imageHtml}
+  //     //         </div>
+  //     //       `;
+  //     //       layer.bindPopup(popupContent);
+  //     //     },
+  //     //     pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
+  //     //       // GeoJSON coordinates are [lng, lat], Leaflet L.marker expects [lat, lng]
+  //     //       // However, L.geoJSON handles this conversion automatically.
+  //     //       return L.marker(latlng); 
+  //     //     }
+  //     //   }).addTo(mapRef.current);
 
-  //       if (geoLayerRef.current && geoLayerRef.current.getBounds().isValid()) {
-  //         mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1));
-  //       }
-  //     } else {
-  //        if (mapRef.current) {
-  //           mapRef.current.setView([44.1, 15.2], 7); 
-  //        }
-  //     }
+  //     //   if (geoLayerRef.current && geoLayerRef.current.getBounds().isValid()) {
+  //     //     mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1));
+  //     //   }
+  //     // } else {
+  //     //    if (mapRef.current) {
+  //     //       mapRef.current.setView([44.1, 15.2], 7); 
+  //     //    }
+  //     // }
   //   } catch (err: any) {
   //     console.error('Error loading locations:', err);
   //     setError(t('errorLoading') + (err.message ? ` (${err.message})` : ''));
   //   } finally {
-  //      setIsLoading(false);
-  //      if (mapRef.current) {
-  //         mapRef.current.invalidateSize(true); 
-  //      }
+  //     // setIsLoading(false);
+  //     // if (mapRef.current) {
+  //     //    // Call invalidateSize with a slight delay to ensure DOM is ready
+  //     //    setTimeout(() => {
+  //     //     if (mapRef.current) {
+  //     //       mapRef.current.invalidateSize(true); 
+  //     //     }
+  //     //   }, 200);
+  //     // }
   //   }
   // }, [t]);
 
   // Effect for initializing the map
   useEffect(() => {
     if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
-      setIsLoading(true);
+      setIsLoading(true); // Set loading true before map init
       setError(null);
       try {
         const mapInstance = L.map(mapContainerRef.current, {
           preferCanvas: true, 
-        }).setView([44.1, 15.2], 8); // Početni centar i zoom
+        }).setView([44.1, 15.2], 8); // Initial center and zoom for Croatia
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -201,18 +210,25 @@ export function InteractiveMap() {
           zoomOffset: 0,
         }).on('tileerror', (tileErrorEvent: any) => { 
             console.error('Tile loading error:', tileErrorEvent.error, tileErrorEvent.tile);
-            setError(t('tileError'));
+            setError(t('tileError')); // Set user-friendly error
         }).addTo(mapInstance);
         
         mapRef.current = mapInstance;
 
-        mapInstance.whenReady(() => { 
+        mapInstance.whenReady(() => {
           if (mapRef.current) {
-            mapRef.current.invalidateSize(true); 
-            // loadLocations(true); // Sakriveno za testiranje osnovne mape
-            console.log("Basic map initialized and ready.");
+            mapRef.current.invalidateSize(true);
+            // For basic map test, loadLocations is commented out
+            // loadLocations(true); 
+            
+            // Dispatch resize event after a short delay
+            setTimeout(() => {
+              window.dispatchEvent(new Event('resize'));
+              console.log("Dispatched window resize event for Leaflet.");
+            }, 500); // 500ms delay
           }
-          setIsLoading(false); // Premješteno ovdje da se ugasi loading nakon whenReady
+          console.log("Basic map initialized and ready.");
+          setIsLoading(false); 
         });
 
       } catch (e) {
@@ -222,18 +238,19 @@ export function InteractiveMap() {
       }
     }
     
-    // Cleanup funkcija za uništavanje mape
+    // Cleanup function to remove the map instance when the component unmounts
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        console.log("Leaflet map instance removed.");
       }
     };
-  // }, [leafletLoaded, isMounted, loadLocations, t]); // loadLocations uklonjen iz ovisnosti dok je sakriven
-  }, [leafletLoaded, isMounted, t]);
+  // }, [leafletLoaded, isMounted, loadLocations, t]); // loadLocations removed from dependencies for basic test
+  }, [leafletLoaded, isMounted, t]); // loadLocations removed for basic test
 
 
-  // Effect for ResizeObserver and window resize listener
+  // Effect for ResizeObserver
   useEffect(() => {
     if (!leafletLoaded || !mapRef.current || !mapContainerRef.current) return;
 
@@ -248,6 +265,20 @@ export function InteractiveMap() {
       resizeObserver.observe(mapContainerRef.current);
     }
     
+    return () => {
+      if (mapContainerRef.current) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        resizeObserver.unobserve(mapContainerRef.current);
+      }
+      resizeObserver.disconnect();
+    };
+  }, [leafletLoaded]); 
+
+  // Effect for window resize listener
+  useEffect(() => {
+    if (!leafletLoaded || !mapRef.current) return;
+
+    const mapInstance = mapRef.current;
     const handleWindowResize = () => {
         if (mapInstance) {
             mapInstance.invalidateSize(true);
@@ -256,16 +287,11 @@ export function InteractiveMap() {
     window.addEventListener('resize', handleWindowResize);
 
     return () => {
-      if (mapContainerRef.current) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        resizeObserver.unobserve(mapContainerRef.current);
-      }
-      resizeObserver.disconnect();
       window.removeEventListener('resize', handleWindowResize);
     };
   }, [leafletLoaded]); 
 
-  // Periodično osvježavanje - SAKRIVENO
+  // Periodical refresh - commented out for basic map test
   // useEffect(() => {
   //   if (!leafletLoaded || !mapRef.current) return; 
     
@@ -307,13 +333,13 @@ export function InteractiveMap() {
           rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossOrigin="anonymous"
+          crossOrigin="anonymous" 
         />
       </Head>
       <Script
         src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossOrigin="anonymous"
+        crossOrigin="anonymous" 
         onLoad={() => {
           setLeafletLoaded(true);
           console.log("Leaflet script loaded.");
@@ -334,28 +360,29 @@ export function InteractiveMap() {
                 {t('mapTitle')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0"> {/* Osiguravamo da nema paddinga na contentu koji drži mapu */}
+            <CardContent className="p-0"> {/* Ensure no padding on content holding the map */}
               <div 
                 id="interactive-map-container-outer" 
                 className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted" 
+                // overflow-visible was here, changed to overflow-hidden to prevent map bleeding
               >
                 <div 
                   ref={mapContainerRef}
                   id="interactive-map-container" 
-                  className="w-full" // Uklonjena h-full klasa, oslanjamo se na inline style
+                  className="w-full" 
                   style={{ 
-                    height: '500px', // FIKSNA VISINA ZA TESTIRANJE
+                    height: '500px', // Fixed height for testing
                     position: 'relative', 
                     background: (isLoading || error) && !mapRef.current ? 'hsl(var(--muted))' : 'transparent' 
                   }}
                 />
-                {(isLoading && !mapRef.current) && (
+                {(isLoading && !mapRef.current && leafletLoaded) && ( // Show loader only if map is not yet initialized but script is loaded
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm pointer-events-none">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
                     <p className="text-lg text-muted-foreground">{t('loading')}</p>
                   </div>
                 )}
-                {error && (
+                {error && !isLoading && ( // Show error if not loading
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-10 p-4 text-center backdrop-blur-sm pointer-events-none">
                     <AlertTriangle className="h-10 w-10 mb-2" />
                     <p className="font-semibold">Map Error</p>
@@ -370,6 +397,4 @@ export function InteractiveMap() {
     </>
   );
 }
-    
-
     
