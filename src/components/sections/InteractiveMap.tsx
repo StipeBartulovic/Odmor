@@ -1,3 +1,4 @@
+
 // src/components/sections/InteractiveMap.tsx
 'use client';
 
@@ -8,8 +9,9 @@ import Script from 'next/script';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type mapboxgl from 'mapbox-gl'; // For type usage
 
-// Define TypeScript interfaces for GeoJSON (kept for future use if we re-add features)
+// TypeScript interfaces for GeoJSON (kept for future use if we add features)
 export interface GeoJSONPoint {
   type: 'Point';
   coordinates: [number, number]; // [longitude, latitude]
@@ -17,10 +19,8 @@ export interface GeoJSONPoint {
 
 export interface GeoJSONFeatureProperties {
   name: string;
-  menu?: string[];
-  parking?: string;
-  rating?: number;
-  images?: string[];
+  description?: string;
+  [key: string]: any;
 }
 
 export interface GeoJSONFeature {
@@ -34,6 +34,7 @@ export interface GeoJSONFeatureCollection {
   type: 'FeatureCollection';
   features: GeoJSONFeature[];
 }
+
 
 const translations = {
   mapTitle: {
@@ -60,27 +61,34 @@ const translations = {
     fr: 'Erreur de chargement de la carte. Veuillez réessayer plus tard.',
     es: 'Error al cargar el mapa. Por favor, inténtalo de nuevo más tarde.',
   },
-  tileError: {
-    en: 'Failed to load map tiles. Please check your network connection.',
-    it: 'Errore caricamento porzioni mappa. Controlla la connessione.',
-    de: 'Kartenkacheln konnten nicht geladen werden. Netzwerkverbindung prüfen.',
-    pl: 'Błąd ładowania kafelków mapy. Sprawdź połączenie sieciowe.',
-    fr: 'Échec du chargement des tuiles de la carte. Vérifiez votre connexion réseau.',
-    es: 'Error al cargar las teselas del mapa. Comprueba tu conexión de red.',
-  },
+  missingTokenError: {
+    en: 'Mapbox Access Token is missing. Please set NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN in your .env file.',
+    it: 'Token di Accesso Mapbox mancante. Imposta NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN nel tuo file .env.',
+    de: 'Mapbox Access Token fehlt. Bitte NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN in Ihrer .env-Datei festlegen.',
+    pl: 'Brak Tokena Dostępu Mapbox. Ustaw NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN w pliku .env.',
+    fr: 'Le jeton d\'accès Mapbox est manquant. Veuillez définir NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN dans votre fichier .env.',
+    es: 'Falta el Token de Acceso de Mapbox. Por favor, establece NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN en tu archivo .env.',
+  }
 };
 
-declare var L: any; // Declare L for Leaflet
+// Declare mapboxgl for global scope if using CDN
+declare global {
+  interface Window {
+    mapboxgl: typeof mapboxgl;
+  }
+}
 
 export function InteractiveMap() {
   const { selectedLanguage } = useLanguage();
   const [isMounted, setIsMounted] = useState(false);
-  const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [mapboxLoaded, setMapboxLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLoadingMap, setIsLoadingMap] = useState(true);
 
-  const mapRef = useRef<any>(null);
+  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
   const t = useCallback(
     (fieldKey: keyof typeof translations): string => {
@@ -97,73 +105,78 @@ export function InteractiveMap() {
   }, []);
 
   useEffect(() => {
-    if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
+    if (mapboxLoaded && isMounted && mapContainerRef.current && !mapInstanceRef.current) {
+      if (!MAPBOX_ACCESS_TOKEN) {
+        console.error('Mapbox Access Token is missing.');
+        setMapError(t('missingTokenError'));
+        setIsLoadingMap(false);
+        return;
+      }
+
       setIsLoadingMap(true);
       setMapError(null);
+      
+      window.mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+      const map = new window.mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: 'mapbox://styles/stipe331/cmayj3i9b009z01s6bq1j0rj1', // Your custom style
+        center: [16.440193, 43.508133], // Default center (Split, Croatia)
+        zoom: 7, // Default zoom
+      });
 
-      // Delay Leaflet initialization to ensure DOM is fully ready
-      const timerId = setTimeout(() => {
-        if (mapContainerRef.current && !mapRef.current) { // Double check refs before init
-          try {
-            console.log('Attempting Leaflet map initialization inside setTimeout...');
-            const mapInstance = L.map(mapContainerRef.current, {
-              // preferCanvas: true, // Optional: Can try re-enabling if issues persist
-            }).setView([44.1, 15.2], 8); // Initial center (Croatia) and zoom level
+      map.on('load', () => {
+        mapInstanceRef.current = map;
+        setIsLoadingMap(false);
+        // Add navigation controls
+        map.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
+        // Add fullscreen control
+        map.addControl(new window.mapboxgl.FullscreenControl());
+        // You can add data loading logic here if needed in the future
+        // e.g., map.addSource(...), map.addLayer(...)
+      });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-              maxZoom: 19,
-              tileSize: 256,
-              zoomOffset: 0,
-            }).on('tileerror', (tileErrorEvent: any) => {
-                console.error('Tile loading error:', tileErrorEvent.error, tileErrorEvent.tile);
-                setMapError(t('tileError'));
-            }).addTo(mapInstance);
-            
-            mapRef.current = mapInstance;
-
-            mapInstance.whenReady(() => {
-              console.log("Map is ready. Invalidating size with requestAnimationFrame.");
-              requestAnimationFrame(() => {
-                if (mapRef.current) {
-                  mapRef.current.invalidateSize(true);
-                  console.log("Map size invalidated via rAF.");
-                }
-              });
-              setIsLoadingMap(false); 
-            });
-
-          } catch (e:any) {
-            console.error("Leaflet map initialization error inside setTimeout:", e);
-            setMapError(t('errorLoadingMap') + (e.message ? ` (${e.message})` : ''));
-            setIsLoadingMap(false);
-          }
-        }
-      }, 0); // setTimeout with 0ms delay
+      map.on('error', (e) => {
+        console.error('Mapbox GL JS error:', e);
+        setMapError(t('errorLoadingMap') + (e.error?.message ? ` (${e.error.message})` : ''));
+        setIsLoadingMap(false);
+      });
+      
+      // Handle resize
+      const resizeObserver = new ResizeObserver(() => {
+        map.resize();
+      });
+      if(mapContainerRef.current) {
+        resizeObserver.observe(mapContainerRef.current);
+      }
+      
+      const windowResizeHandler = () => map.resize();
+      window.addEventListener('resize', windowResizeHandler);
 
       return () => {
-        clearTimeout(timerId); // Clear timeout on cleanup
-        if (mapRef.current) {
-          mapRef.current.remove();
-          mapRef.current = null;
-          console.log("Leaflet map instance removed on cleanup.");
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
         }
+        if(mapContainerRef.current) {
+            resizeObserver.unobserve(mapContainerRef.current);
+        }
+        resizeObserver.disconnect();
+        window.removeEventListener('resize', windowResizeHandler);
       };
     }
-  }, [leafletLoaded, isMounted, t]);
+  }, [mapboxLoaded, isMounted, t, MAPBOX_ACCESS_TOKEN]);
 
 
-  // Placeholder for SSR and initial client render
-  if (!isMounted) { 
+  if (!isMounted) {
     return (
       <section className="py-8 md:py-12 bg-muted/30">
         <div className="container mx-auto px-4">
           <Card className="shadow-xl rounded-xl overflow-hidden">
             <CardHeader className="bg-background p-6">
-               <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
+              <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
             </CardHeader>
-            <CardContent className="p-0"> {/* Ensure no padding on direct parent of map container */}
-              <div className="w-full bg-muted flex items-center justify-center" style={{height: '500px'}}>
+            <CardContent className="p-0">
+              <div className="w-full bg-muted flex items-center justify-center" style={{ height: '500px' }}>
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
             </CardContent>
@@ -177,24 +190,19 @@ export function InteractiveMap() {
     <>
       <Head>
         <link
+          href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" // Updated to a recent version
           rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossOrigin="anonymous" 
         />
       </Head>
       <Script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossOrigin="anonymous"
+        src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js" // Updated to a recent version
         onLoad={() => {
-          setLeafletLoaded(true);
-          console.log("Leaflet script loaded.");
+          setMapboxLoaded(true);
         }}
         onError={(e) => {
-            console.error('Leaflet script failed to load:', e);
-            setMapError('Failed to load map library.');
-            setIsLoadingMap(false);
+          console.error('Mapbox GL JS script failed to load:', e);
+          setMapError('Failed to load map library.');
+          setIsLoadingMap(false);
         }}
         strategy="afterInteractive"
       />
@@ -207,30 +215,28 @@ export function InteractiveMap() {
                 {t('mapTitle')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0"> {/* Ensure no padding on direct parent of map container */}
-              <div 
-                id="interactive-map-container-outer" 
+            <CardContent className="p-0">
+              <div
+                id="interactive-map-container-outer"
                 className="w-full rounded-b-lg overflow-hidden relative bg-muted"
               >
-                <div 
+                <div
                   ref={mapContainerRef}
-                  id="interactive-map-container" 
-                  style={{ 
+                  id="interactive-map-container"
+                  style={{
                     width: '100%',
                     height: '500px', // Explicit fixed height
-                    position: 'relative', 
-                    background: (isLoadingMap && !mapRef.current) ? 'hsl(var(--muted))' : 'transparent'
+                    position: 'relative',
+                    background: (isLoadingMap || mapError) ? 'hsl(var(--muted))' : 'transparent'
                   }}
                 />
-                {/* Loading Indicator */}
-                {(isLoadingMap && leafletLoaded) && (
+                {(isLoadingMap && !mapError) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm pointer-events-none">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
                     <p className="text-lg text-muted-foreground">{t('loading')}</p>
                   </div>
                 )}
-                {/* Error Message Overlay */}
-                {mapError && !isLoadingMap && (
+                {mapError && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-10 p-4 text-center backdrop-blur-sm pointer-events-none">
                     <AlertTriangle className="h-10 w-10 mb-2" />
                     <p className="font-semibold">Map Error</p>
