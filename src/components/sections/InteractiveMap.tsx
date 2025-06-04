@@ -10,12 +10,12 @@ import { MapPin, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 // Define TypeScript interfaces for GeoJSON
-interface GeoJSONPoint {
+export interface GeoJSONPoint {
   type: 'Point';
   coordinates: [number, number]; // [longitude, latitude]
 }
 
-interface GeoJSONFeatureProperties {
+export interface GeoJSONFeatureProperties {
   name: string;
   menu?: string[];
   parking?: string;
@@ -24,14 +24,14 @@ interface GeoJSONFeatureProperties {
   // Add any other properties you expect from your API
 }
 
-interface GeoJSONFeature {
+export interface GeoJSONFeature {
   type: 'Feature';
   id?: string | number;
   geometry: GeoJSONPoint;
   properties: GeoJSONFeatureProperties;
 }
 
-interface GeoJSONFeatureCollection {
+export interface GeoJSONFeatureCollection {
   type: 'FeatureCollection';
   features: GeoJSONFeature[];
 }
@@ -70,7 +70,8 @@ export function InteractiveMap() {
   const { selectedLanguage } = useLanguage();
   const [isMounted, setIsMounted] = useState(false);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
-  const [locations, setLocations] = useState<GeoJSONFeatureCollection | null>(null);
+  // Locations state is not directly needed here anymore if Leaflet handles adding/removing layers
+  // const [locations, setLocations] = useState<GeoJSONFeatureCollection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -89,15 +90,17 @@ export function InteractiveMap() {
 
   const loadLocations = useCallback(async () => {
     if (!leafletLoaded || !mapRef.current) return;
-    setIsLoading(true);
+    // Don't set isLoading true here if periodic refresh, to avoid flicker
+    // setIsLoading(true); 
     setError(null);
     try {
       const response = await fetch('/api/locations');
       if (!response.ok) {
-        throw new Error(`Failed to fetch locations: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch locations: ${response.status} ${errorText}`);
       }
       const data: GeoJSONFeatureCollection = await response.json();
-      setLocations(data);
+      // setLocations(data); // Not strictly needed if directly updating map layer
 
       if (geoLayerRef.current) {
         mapRef.current.removeLayer(geoLayerRef.current);
@@ -110,43 +113,36 @@ export function InteractiveMap() {
             const popupContent = `
               <div style="font-family: var(--font-geist-sans), Arial, sans-serif; max-width: 250px;">
                 <h3 style="margin-top: 0; margin-bottom: 8px; font-size: 1.1em; color: hsl(var(--primary));">${p.name}</h3>
-                ${p.menu ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${p.menu.join(', ')}</p>` : ''}
-                ${p.parking ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${p.parking}</p>` : ''}
-                ${p.rating ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${p.rating}</p>` : ''}
+                ${p.menu ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> ${p.menu.join(', ')}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Meni:</strong> Nema podataka</p>'}
+                ${p.parking ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> ${p.parking}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Parking:</strong> Nema podataka</p>'}
+                ${p.rating ? `<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> ${p.rating}</p>` : '<p style="margin: 4px 0; font-size: 0.9em;"><strong>Ocjena:</strong> Nema ocjene</p>'}
                 ${p.images && p.images[0] ? `<img src="${p.images[0]}" alt="${p.name}" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-top: 8px;" />` : ''}
               </div>
             `;
             layer.bindPopup(popupContent);
           },
           pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
-             // Custom marker using a DivIcon for more styling control if needed, or default marker
             return L.marker(latlng);
           }
         }).addTo(mapRef.current);
 
-        // Fit map to bounds of all features if there are any
-        if (geoLayerRef.current.getBounds().isValid()) {
-            mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1)); // pad adds some margin
-        } else if (data.features.length === 1) {
-            // If only one feature, set view to it with a specific zoom
-            mapRef.current.setView(data.features[0].geometry.coordinates.slice().reverse(), 13); // Leaflet expects [lat, lng]
+        if (mapRef.current && geoLayerRef.current && geoLayerRef.current.getBounds().isValid()) {
+          // Fit map to bounds only if it's not the first load or if explicitly desired
+          // For periodic refresh, you might not want to change the view
+          // mapRef.current.fitBounds(geoLayerRef.current.getBounds().pad(0.1));
         }
-
       } else {
-        // If no features, perhaps set a default view or message
-        mapRef.current.setView([44.1, 15.2], 10); // Default view if no locations
+         // If no features, clear existing layer if any
+        if (geoLayerRef.current) {
+            mapRef.current.removeLayer(geoLayerRef.current);
+            geoLayerRef.current = null; // Reset ref
+        }
       }
-
-    } catch (err) {
+    } catch (err: any) {
       console.error('Greška pri učitavanju lokacija:', err);
-      setError(t('errorLoading'));
-      if (err instanceof Error) {
-         setError(`${t('errorLoading')} Details: ${err.message}`);
-      } else {
-         setError(t('errorLoading'));
-      }
+      setError(t('errorLoading') + (err.message ? ` (${err.message})` : ''));
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Set loading to false after first attempt
     }
   }, [leafletLoaded, t]);
 
@@ -155,34 +151,36 @@ export function InteractiveMap() {
     setIsMounted(true);
   }, []);
 
-  // Initialize map when Leaflet is loaded
   useEffect(() => {
     if (leafletLoaded && isMounted && !mapRef.current) {
-      try {
-        const mapElement = document.getElementById('interactive-map-container');
-        if (mapElement && !mapElement.hasChildNodes()) { // Ensure map is not already initialized
-            mapRef.current = L.map('interactive-map-container').setView([44.1, 15.2], 10); // Default: Croatia
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19,
-            }).addTo(mapRef.current);
-            loadLocations(); // Initial load
-        } else if (mapElement && mapElement.hasChildNodes() && mapRef.current) {
-            // If map was initialized but something went wrong with layer, try loading locations again
-            loadLocations();
+      const mapElement = document.getElementById('interactive-map-container');
+      if (mapElement && !mapElement.hasChildNodes()) { 
+        try {
+          mapRef.current = L.map('interactive-map-container').setView([44.1, 15.2], 10); 
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+          }).addTo(mapRef.current);
+          loadLocations(); 
+        } catch (e) {
+          console.error("Leaflet map initialization error:", e);
+          setError("Could not initialize map.");
+          setIsLoading(false);
         }
-      } catch (e) {
-        console.error("Leaflet map initialization error:", e);
-        setError("Could not initialize map.");
-        setIsLoading(false);
+      } else if (mapElement && mapElement.hasChildNodes() && mapRef.current && !geoLayerRef.current) {
+        // If map was initialized but layer not added, attempt to load locations
+        loadLocations();
       }
     }
   }, [leafletLoaded, isMounted, loadLocations]);
 
   // Periodic refresh
   useEffect(() => {
-    if (!leafletLoaded) return;
-    const intervalId = setInterval(loadLocations, 60000); // 60 seconds
+    if (!leafletLoaded || !mapRef.current) return; // Ensure map is initialized
+    const intervalId = setInterval(() => {
+        console.log("Refreshing locations...");
+        loadLocations();
+    }, 60000); // 60 seconds
     return () => clearInterval(intervalId);
   }, [loadLocations, leafletLoaded]);
 
@@ -222,7 +220,6 @@ export function InteractiveMap() {
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossOrigin=""
         onLoad={() => {
-            console.log('Leaflet script loaded.');
             setLeafletLoaded(true);
         }}
         onError={() => {
@@ -230,7 +227,7 @@ export function InteractiveMap() {
             setError('Failed to load map library.');
             setIsLoading(false);
         }}
-        strategy="afterInteractive" // Load after the page is interactive
+        strategy="afterInteractive" 
       />
       <section className="py-8 md:py-12 bg-muted/30">
         <div className="container mx-auto px-4">
@@ -242,14 +239,14 @@ export function InteractiveMap() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-2">
-              {isLoading && !error && (
+              {(isLoading && !mapRef.current) && !error && ( // Show loading only on initial load before map is ready
                 <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   <p className="ml-4 text-lg text-muted-foreground">{t('loading')}</p>
                 </div>
               )}
               {error && (
-                 <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-destructive/10 text-destructive flex flex-col items-center justify-center p-4">
+                 <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-destructive/10 text-destructive flex flex-col items-center justify-center p-4 text-center">
                     <p className="font-semibold">Map Error</p>
                     <p className="text-sm">{error}</p>
                  </div>
@@ -257,7 +254,7 @@ export function InteractiveMap() {
               <div 
                 id="interactive-map-container" 
                 className="aspect-[16/9] w-full rounded-lg overflow-hidden"
-                style={{ display: isLoading || error ? 'none' : 'block' }} // Hide while loading/error to prevent unstyled map flash
+                style={{ display: (isLoading && !mapRef.current) || error ? 'none' : 'block' }} 
               >
                 {/* Leaflet map will be mounted here */}
               </div>
