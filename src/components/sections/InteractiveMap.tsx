@@ -1,4 +1,3 @@
-
 // src/components/sections/InteractiveMap.tsx
 'use client';
 
@@ -105,8 +104,7 @@ export function InteractiveMap() {
     if (isInitialLoad) {
       setIsLoading(true);
     }
-    // Do not clear global error here, only location-specific error
-    // setError(null); 
+    setError(null); 
 
     try {
       const response = await fetch('/api/locations');
@@ -127,11 +125,11 @@ export function InteractiveMap() {
           !feature.geometry || feature.geometry.type !== 'Point' ||
           !Array.isArray(feature.geometry.coordinates) ||
           feature.geometry.coordinates.length !== 2 ||
-          typeof feature.geometry.coordinates[0] !== 'number' || // Check for number type
-          typeof feature.geometry.coordinates[1] !== 'number'    // Check for number type
+          typeof feature.geometry.coordinates[0] !== 'number' || 
+          typeof feature.geometry.coordinates[1] !== 'number'    
         ) {
           console.warn(`Invalid GeoJSON feature at index ${index}:`, feature);
-          // Optionally, filter out invalid features or throw an error
+          // Potentially skip this feature or handle error
         }
       });
 
@@ -163,7 +161,7 @@ export function InteractiveMap() {
             layer.bindPopup(popupContent);
           },
           pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
-            return L.marker(latlng); // Leaflet's L.marker expects [lat, lng]
+            return L.marker(latlng); 
           }
         }).addTo(mapRef.current);
 
@@ -172,7 +170,7 @@ export function InteractiveMap() {
         }
       } else {
          if (mapRef.current) {
-            mapRef.current.setView([44.1, 15.2], 7); // Default view if no features
+            mapRef.current.setView([44.1, 15.2], 7); 
          }
       }
     } catch (err: any) {
@@ -181,9 +179,7 @@ export function InteractiveMap() {
     } finally {
        setIsLoading(false);
        if (mapRef.current) {
-        setTimeout(() => { // Give a bit more time for rendering before invalidating
-            if (mapRef.current) mapRef.current.invalidateSize(true);
-        }, 100); 
+          mapRef.current.invalidateSize(true); 
        }
     }
   }, [t]);
@@ -193,25 +189,25 @@ export function InteractiveMap() {
     if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
       try {
         const mapInstance = L.map(mapContainerRef.current, {
-          preferCanvas: true, // Suggested fix
-        }).setView([44.1, 15.2], 8); // Initial view
+          preferCanvas: true, 
+        }).setView([44.1, 15.2], 8); 
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19,
-          tileSize: 256, // Standard tile size
+          tileSize: 256, 
           zoomOffset: 0,
-        }).on('tileerror', (tileErrorEvent: any) => { // Suggested fix
+        }).on('tileerror', (tileErrorEvent: any) => { 
             console.error('Tile loading error:', tileErrorEvent.error, tileErrorEvent.tile);
             setError(t('tileError'));
         }).addTo(mapInstance);
         
         mapRef.current = mapInstance;
 
-        mapInstance.whenReady(() => { // Suggested fix
+        mapInstance.whenReady(() => { 
           if (mapRef.current) {
             mapRef.current.invalidateSize(true); 
-            loadLocations(true); // Initial load of locations
+            loadLocations(true); 
           }
         });
 
@@ -221,7 +217,7 @@ export function InteractiveMap() {
         setIsLoading(false);
       }
     }
-    // Cleanup function to destroy map instance if component unmounts
+    
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
@@ -234,25 +230,28 @@ export function InteractiveMap() {
   useEffect(() => {
     if (!leafletLoaded || !mapRef.current || !mapContainerRef.current) return;
 
-    const mapInstance = mapRef.current; // Capture current map instance
-
-    // ResizeObserver
+    const mapInstance = mapRef.current; 
+    
     const resizeObserver = new ResizeObserver(() => {
-        mapInstance.invalidateSize(true);
+        if (mapInstance) mapInstance.invalidateSize(true);
     });
-    resizeObserver.observe(mapContainerRef.current);
-
-    // Window resize listener
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current);
+    }
+    
     const handleWindowResize = () => {
-        mapInstance.invalidateSize(true);
+        if (mapInstance) mapInstance.invalidateSize(true);
     };
     window.addEventListener('resize', handleWindowResize);
 
     return () => {
+      if (mapContainerRef.current) {
+        resizeObserver.unobserve(mapContainerRef.current);
+      }
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleWindowResize);
     };
-  }, [leafletLoaded]); // Rerun if leafletLoaded changes (e.g. script reloads somehow)
+  }, [leafletLoaded]); 
 
   // Effect for periodic refresh
   useEffect(() => {
@@ -302,16 +301,16 @@ export function InteractiveMap() {
       <Script
         src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossOrigin=""
+        crossOrigin="anonymous" // Corrected: Changed from "" to "anonymous"
         onLoad={() => {
-          setLeafletLoaded(true); 
+          setLeafletLoaded(true);
         }}
         onError={() => {
             console.error('Leaflet script failed to load.');
             setError('Failed to load map library.');
             setIsLoading(false);
         }}
-        strategy="afterInteractive" 
+        strategy="afterInteractive"
       />
       <section className="py-8 md:py-12 bg-muted/30">
         <div className="container mx-auto px-4">
@@ -325,15 +324,15 @@ export function InteractiveMap() {
             <CardContent className="p-0">
               <div 
                 id="interactive-map-container-outer" 
-                className="aspect-[16/9] w-full rounded-b-lg overflow-visible relative bg-muted" // Changed to overflow-visible
+                className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted"
               >
                 <div 
                   ref={mapContainerRef}
                   id="interactive-map-container" 
                   className="w-full h-full" 
                   style={{ 
-                    minHeight: '400px', // Suggested fix
-                    position: 'relative', // Suggested fix
+                    minHeight: '400px', 
+                    position: 'relative', 
                     background: (isLoading || error) && !mapRef.current ? 'hsl(var(--muted))' : 'transparent' 
                   }}
                 />
