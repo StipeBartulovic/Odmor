@@ -8,6 +8,16 @@ interface UpdatePayload {
   geometry?: GeoJSONPoint;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS(request: Request) {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 
 // GET /api/locations/:id - vrati specificnu lokaciju
 export async function GET(
@@ -18,9 +28,9 @@ export async function GET(
   const location = locationsDb.find(loc => String(loc.id) === id);
 
   if (!location) {
-    return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404 });
+    return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404, headers: corsHeaders });
   }
-  return NextResponse.json(location);
+  return NextResponse.json(location, { headers: corsHeaders });
 }
 
 
@@ -35,7 +45,7 @@ export async function PATCH(
     const index = locationsDb.findIndex(loc => String(loc.id) === id);
 
     if (index === -1) {
-      return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404 });
+      return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404, headers: corsHeaders });
     }
 
     // Update samo properties i geometry
@@ -46,14 +56,14 @@ export async function PATCH(
       locationsDb[index].geometry = update.geometry;
     }
 
-    return NextResponse.json({ message: "Lokacija ažurirana", id: locationsDb[index].id });
+    return NextResponse.json({ message: "Lokacija ažurirana", id: locationsDb[index].id }, { headers: corsHeaders });
 
   } catch (error) {
      console.error(`Error processing PATCH /api/locations/${id}:`, error);
     if (error instanceof SyntaxError) {
-      return NextResponse.json({ error: "Neispravan JSON format u tijelu zahtjeva" }, { status: 400 });
+      return NextResponse.json({ error: "Neispravan JSON format u tijelu zahtjeva" }, { status: 400, headers: corsHeaders });
     }
-    return NextResponse.json({ error: "Interna greška servera prilikom ažuriranja lokacije" }, { status: 500 });
+    return NextResponse.json({ error: "Interna greška servera prilikom ažuriranja lokacije" }, { status: 500, headers: corsHeaders });
   }
 }
 
@@ -66,9 +76,9 @@ export async function DELETE(
   const index = locationsDb.findIndex(loc => String(loc.id) === id);
 
   if (index === -1) {
-    return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404 });
+    return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404, headers: corsHeaders });
   }
   
   const deletedLocation = locationsDb.splice(index, 1);
-  return NextResponse.json({ message: "Lokacija obrisana", id: deletedLocation[0].id });
+  return NextResponse.json({ message: "Lokacija obrisana", id: deletedLocation[0].id }, { headers: corsHeaders });
 }
