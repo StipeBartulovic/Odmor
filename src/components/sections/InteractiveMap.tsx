@@ -62,6 +62,14 @@ const translations = {
     fr: 'Erreur lors du chargement des lieux. Veuillez réessayer plus tard.',
     es: 'Error al cargar las ubicaciones. Inténtalo de nuevo más tarde.',
   },
+  tileError: {
+    en: 'Failed to load map tiles. Please check your network connection.',
+    it: 'Errore caricamento porzioni mappa. Controlla la connessione.',
+    de: 'Kartenkacheln konnten nicht geladen werden. Netzwerkverbindung prüfen.',
+    pl: 'Błąd ładowania kafelków mapy. Sprawdź połączenie sieciowe.',
+    fr: 'Échec du chargement des tuiles de la carte. Vérifiez votre connexion réseau.',
+    es: 'Error al cargar las teselas del mapa. Comprueba tu conexión de red.',
+  }
 };
 
 // Declare Leaflet 'L' type for global scope (available after script load)
@@ -97,7 +105,8 @@ export function InteractiveMap() {
     if (isInitialLoad) {
       setIsLoading(true);
     }
-    setError(null);
+    // Do not clear global error here, only location-specific error
+    // setError(null); 
 
     try {
       const response = await fetch('/api/locations');
@@ -106,7 +115,25 @@ export function InteractiveMap() {
         throw new Error(`Failed to fetch locations: ${response.status} ${errorText}`);
       }
       const data: GeoJSONFeatureCollection = await response.json();
-      // console.log('Fetched GeoJSON data:', JSON.stringify(data, null, 2));
+      console.log('Fetched GeoJSON data:', JSON.stringify(data, null, 2));
+
+      // Validate GeoJSON
+      if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) {
+        throw new Error('Invalid GeoJSON data received from API.');
+      }
+      data.features.forEach((feature, index) => {
+        if (
+          !feature || feature.type !== 'Feature' ||
+          !feature.geometry || feature.geometry.type !== 'Point' ||
+          !Array.isArray(feature.geometry.coordinates) ||
+          feature.geometry.coordinates.length !== 2 ||
+          typeof feature.geometry.coordinates[0] !== 'number' || // Check for number type
+          typeof feature.geometry.coordinates[1] !== 'number'    // Check for number type
+        ) {
+          console.warn(`Invalid GeoJSON feature at index ${index}:`, feature);
+          // Optionally, filter out invalid features or throw an error
+        }
+      });
 
 
       if (geoLayerRef.current) {
@@ -136,7 +163,7 @@ export function InteractiveMap() {
             layer.bindPopup(popupContent);
           },
           pointToLayer: function (feature: GeoJSONFeature, latlng: [number, number]) {
-            return L.marker(latlng);
+            return L.marker(latlng); // Leaflet's L.marker expects [lat, lng]
           }
         }).addTo(mapRef.current);
 
@@ -145,7 +172,7 @@ export function InteractiveMap() {
         }
       } else {
          if (mapRef.current) {
-            mapRef.current.setView([44.1, 15.2], 7);
+            mapRef.current.setView([44.1, 15.2], 7); // Default view if no features
          }
       }
     } catch (err: any) {
@@ -154,13 +181,9 @@ export function InteractiveMap() {
     } finally {
        setIsLoading(false);
        if (mapRef.current) {
-        // Ensure map recalculates its size after potential viewport changes (fitBounds, setView)
-        // or if data loading finishes.
-        setTimeout(() => {
-          if (mapRef.current) {
-            mapRef.current.invalidateSize(true);
-          }
-        }, 350); // Slightly increased timeout
+        setTimeout(() => { // Give a bit more time for rendering before invalidating
+            if (mapRef.current) mapRef.current.invalidateSize(true);
+        }, 100); 
        }
     }
   }, [t]);
@@ -170,28 +193,26 @@ export function InteractiveMap() {
     if (leafletLoaded && isMounted && mapContainerRef.current && !mapRef.current) {
       try {
         const mapInstance = L.map(mapContainerRef.current, {
-          preferCanvas: true,
-        }).setView([44.1, 15.2], 8);
+          preferCanvas: true, // Suggested fix
+        }).setView([44.1, 15.2], 8); // Initial view
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19,
-          // Keep existing options
+          tileSize: 256, // Standard tile size
+          zoomOffset: 0,
+        }).on('tileerror', (tileErrorEvent: any) => { // Suggested fix
+            console.error('Tile loading error:', tileErrorEvent.error, tileErrorEvent.tile);
+            setError(t('tileError'));
         }).addTo(mapInstance);
         
         mapRef.current = mapInstance;
 
-        // Use whenReady to ensure map has a size before further operations
-        mapInstance.whenReady(() => {
-          // Call invalidateSize after a short delay to ensure the container has its final dimensions
-          setTimeout(() => {
-            if (mapRef.current) { // Check again in case component unmounted
-              mapRef.current.invalidateSize(true);
-            }
-          }, 200); // Adjusted delay, can be experimented with
-
-          // Initial load of locations now happens after map is ready
-          loadLocations(true);
+        mapInstance.whenReady(() => { // Suggested fix
+          if (mapRef.current) {
+            mapRef.current.invalidateSize(true); 
+            loadLocations(true); // Initial load of locations
+          }
         });
 
       } catch (e) {
@@ -207,25 +228,49 @@ export function InteractiveMap() {
         mapRef.current = null;
       }
     };
-  }, [leafletLoaded, isMounted, loadLocations]); // loadLocations added as dependency
+  }, [leafletLoaded, isMounted, loadLocations, t]);
+
+  // Effect for ResizeObserver and window resize listener
+  useEffect(() => {
+    if (!leafletLoaded || !mapRef.current || !mapContainerRef.current) return;
+
+    const mapInstance = mapRef.current; // Capture current map instance
+
+    // ResizeObserver
+    const resizeObserver = new ResizeObserver(() => {
+        mapInstance.invalidateSize(true);
+    });
+    resizeObserver.observe(mapContainerRef.current);
+
+    // Window resize listener
+    const handleWindowResize = () => {
+        mapInstance.invalidateSize(true);
+    };
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
+    };
+  }, [leafletLoaded]); // Rerun if leafletLoaded changes (e.g. script reloads somehow)
 
   // Effect for periodic refresh
   useEffect(() => {
-    if (!leafletLoaded || !mapRef.current) return; // Ensure map is initialized
+    if (!leafletLoaded || !mapRef.current) return; 
     
     const intervalId = setInterval(() => {
-        loadLocations(false); // Pass false for subsequent loads
-    }, 60000); // Refresh every minute
+        loadLocations(false); 
+    }, 60000); 
     
     return () => clearInterval(intervalId);
-  }, [leafletLoaded, loadLocations]); // loadLocations as dependency
+  }, [leafletLoaded, loadLocations]);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
 
-  if (!isMounted && typeof window === 'undefined') { // Better SSR placeholder
+  if (!isMounted) { 
     return (
       <section className="py-8 md:py-12 bg-muted/30">
         <div className="container mx-auto px-4">
@@ -234,7 +279,7 @@ export function InteractiveMap() {
                <div className="h-8 bg-muted rounded w-1/2 animate-pulse"></div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="aspect-[16/9] w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+              <div className="aspect-[16/9] w-full bg-muted flex items-center justify-center">
                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
             </CardContent>
@@ -259,7 +304,7 @@ export function InteractiveMap() {
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossOrigin=""
         onLoad={() => {
-          setLeafletLoaded(true); // Set state when script is loaded
+          setLeafletLoaded(true); 
         }}
         onError={() => {
             console.error('Leaflet script failed to load.');
@@ -277,18 +322,21 @@ export function InteractiveMap() {
                 {t('mapTitle')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0"> {/* Ensure no padding here */}
+            <CardContent className="p-0">
               <div 
-                id="interactive-map-container-outer" // Outer container for aspect ratio and overlays
-                className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted" 
+                id="interactive-map-container-outer" 
+                className="aspect-[16/9] w-full rounded-b-lg overflow-visible relative bg-muted" // Changed to overflow-visible
               >
                 <div 
                   ref={mapContainerRef}
-                  id="interactive-map-container" // Leaflet initializes on this div
-                  className="w-full h-full" // Takes full size of its parent
-                  style={{ background: isLoading || error ? 'hsl(var(--muted))' : 'transparent' }} // Show muted bg if map content not ready
+                  id="interactive-map-container" 
+                  className="w-full h-full" 
+                  style={{ 
+                    minHeight: '400px', // Suggested fix
+                    position: 'relative', // Suggested fix
+                    background: (isLoading || error) && !mapRef.current ? 'hsl(var(--muted))' : 'transparent' 
+                  }}
                 />
-                {/* Overlays for loading and error states */}
                 {isLoading && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm pointer-events-none">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
