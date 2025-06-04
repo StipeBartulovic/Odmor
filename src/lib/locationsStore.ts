@@ -1,41 +1,26 @@
-// src/lib/locationsStore.ts
-import type { GeoJSONFeature } from '@/components/sections/InteractiveMap'; // Ensure types are exported from InteractiveMap
+// This file is no longer used as locations are now stored in Firebase Firestore.
+// You can delete this file.
 
-// In-memory store for locations.
-// In a real application, this would be replaced with a database.
-export let locationsDb: GeoJSONFeature[] = [
-  // Example initial data (optional)
-  {
-    type: 'Feature',
-    id: 'example-1',
-    geometry: {
-      type: 'Point',
-      coordinates: [16.3738, 48.2082], // Longitude, Latitude (e.g., Vienna)
-    },
-    properties: {
-      name: 'Caffe Bar "Kod Starog"',
-      menu: ['Kava', 'Pivo', 'Sokovi', 'Rakija'],
-      parking: 'Nema vlastiti, javni parking u blizini',
-      rating: 4.7,
-      images: ['https://placehold.co/600x400.png'],
-    },
-  },
-  {
-    type: 'Feature',
-    id: 'example-2',
-    geometry: {
-      type: 'Point',
-      coordinates: [15.2278, 44.1194], // Zadar
-    },
-    properties: {
-      name: 'Morske Orgulje',
-      menu: ['Zvuk valova', 'Zalazak sunca'],
-      parking: 'Javni parking uz obalu (naplata)',
-      rating: 4.9,
-      images: ['https://placehold.co/600x400.png'],
-    },
-  },
-];
+// To re-add the example locations that were previously in this file,
+// you'll need to add them to your "locations" collection in Firestore.
+// Each document in Firestore should have:
+// - A 'type' field with the value "Feature" (string)
+// - A 'geometry' field (object) with 'type': "Point" and 'coordinates': [longitude, latitude]
+// - A 'properties' field (object) with name, menu, parking, rating, images etc.
 
-// Helper function to generate a unique ID (if not provided by client)
-export const generateId = (): string => Date.now().toString() + Math.random().toString(36).substring(2, 9);
+// Example structure for a Firestore document in the "locations" collection:
+// {
+//   type: "Feature",
+//   geometry: {
+//     type: "Point",
+//     coordinates: [16.440193, 43.508133] // Example: Split
+//   },
+//   properties: {
+//     name: "Example Cafe",
+//     description: "A nice place to visit.",
+//     menu: ["Coffee", "Tea"],
+//     parking: "Available",
+//     rating: 4.5,
+//     images: ["https://placehold.co/600x400.png"]
+//   }
+// }

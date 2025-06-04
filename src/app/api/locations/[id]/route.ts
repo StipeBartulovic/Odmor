@@ -1,7 +1,8 @@
 // src/app/api/locations/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { locationsDb } from '@/lib/locationsStore';
-import type { GeoJSONFeatureProperties, GeoJSONPoint } from '@/components/sections/InteractiveMap';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import type { GeoJSONFeatureProperties, GeoJSONPoint, GeoJSONFeature } from '@/components/sections/InteractiveMap';
 
 interface UpdatePayload {
   properties?: Partial<GeoJSONFeatureProperties>;
@@ -10,7 +11,7 @@ interface UpdatePayload {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -18,21 +19,34 @@ export async function OPTIONS(request: Request) {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-
 // GET /api/locations/:id - vrati specificnu lokaciju
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   const id = params.id;
-  const location = locationsDb.find(loc => String(loc.id) === id);
+  try {
+    const docRef = doc(db, "locations", id);
+    const docSnap = await getDoc(docRef);
 
-  if (!location) {
-    return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404, headers: corsHeaders });
+    if (!docSnap.exists()) {
+      return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404, headers: corsHeaders });
+    }
+    
+    const data = docSnap.data();
+    const feature: GeoJSONFeature = {
+      type: "Feature", // Assuming 'type' is stored or implied
+      id: docSnap.id,
+      geometry: data.geometry as GeoJSONPoint,
+      properties: data.properties as GeoJSONFeatureProperties,
+    };
+    
+    return NextResponse.json(feature, { headers: corsHeaders });
+  } catch (error) {
+    console.error(`Error fetching location ${id} from Firestore:`, error);
+    return NextResponse.json({ error: "Interna greška servera prilikom dohvaćanja lokacije" }, { status: 500, headers: corsHeaders });
   }
-  return NextResponse.json(location, { headers: corsHeaders });
 }
-
 
 // PATCH /api/locations/:id - ažuriraj lokaciju
 export async function PATCH(
@@ -41,22 +55,31 @@ export async function PATCH(
 ) {
   const id = params.id;
   try {
-    const update = await request.json() as UpdatePayload;
-    const index = locationsDb.findIndex(loc => String(loc.id) === id);
+    const updateData = await request.json() as UpdatePayload;
+    const docRef = doc(db, "locations", id);
+    const docSnap = await getDoc(docRef);
 
-    if (index === -1) {
+    if (!docSnap.exists()) {
       return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404, headers: corsHeaders });
     }
 
-    // Update samo properties i geometry
-    if (update.properties) {
-      locationsDb[index].properties = { ...locationsDb[index].properties, ...update.properties };
+    const updateFields: any = {};
+    if (updateData.properties) {
+      // For nested properties, Firestore needs dot notation or merging carefully
+      // Simple approach: overwrite properties field if provided
+      updateFields.properties = { ...docSnap.data().properties, ...updateData.properties };
     }
-    if (update.geometry) {
-      locationsDb[index].geometry = update.geometry;
+    if (updateData.geometry) {
+      updateFields.geometry = updateData.geometry;
     }
 
-    return NextResponse.json({ message: "Lokacija ažurirana", id: locationsDb[index].id }, { headers: corsHeaders });
+    if (Object.keys(updateFields).length === 0) {
+        return NextResponse.json({ error: "Nema podataka za ažuriranje" }, { status: 400, headers: corsHeaders });
+    }
+
+    await updateDoc(docRef, updateFields);
+
+    return NextResponse.json({ message: "Lokacija ažurirana", id }, { headers: corsHeaders });
 
   } catch (error) {
      console.error(`Error processing PATCH /api/locations/${id}:`, error);
@@ -69,16 +92,22 @@ export async function PATCH(
 
 // DELETE /api/locations/:id - briši lokaciju
 export async function DELETE(
-  request: Request, // Request object is conventional even if not used directly
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   const id = params.id;
-  const index = locationsDb.findIndex(loc => String(loc.id) === id);
+  try {
+    const docRef = doc(db, "locations", id);
+    const docSnap = await getDoc(docRef);
 
-  if (index === -1) {
-    return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404, headers: corsHeaders });
-  }
+    if (!docSnap.exists()) {
+      return NextResponse.json({ error: "Lokacija nije pronađena" }, { status: 404, headers: corsHeaders });
+    }
   
-  const deletedLocation = locationsDb.splice(index, 1);
-  return NextResponse.json({ message: "Lokacija obrisana", id: deletedLocation[0].id }, { headers: corsHeaders });
+    await deleteDoc(docRef);
+    return NextResponse.json({ message: "Lokacija obrisana", id }, { headers: corsHeaders });
+  } catch (error) {
+    console.error(`Error deleting location ${id} from Firestore:`, error);
+    return NextResponse.json({ error: "Interna greška servera prilikom brisanja lokacije" }, { status: 500, headers: corsHeaders });
+  }
 }
