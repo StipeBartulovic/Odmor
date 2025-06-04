@@ -95,7 +95,7 @@ export function InteractiveMap() {
     [isMounted, selectedLanguage]
   );
 
-  // Funkcija za dohvaćanje lokacija - Sakrivena za sada
+  // Funkcija za dohvaćanje lokacija - SAKRIVENA ZA TESTIRANJE OSNOVNE MAPE
   // const loadLocations = useCallback(async (isInitialLoad = false) => {
   //   if (!mapRef.current) {
   //     if(isInitialLoad) setIsLoading(false);
@@ -209,10 +209,10 @@ export function InteractiveMap() {
         mapInstance.whenReady(() => { 
           if (mapRef.current) {
             mapRef.current.invalidateSize(true); 
-            // loadLocations(true); // Sakriveno
+            // loadLocations(true); // Sakriveno za testiranje osnovne mape
             console.log("Basic map initialized and ready.");
-            setIsLoading(false);
           }
+          setIsLoading(false); // Premješteno ovdje da se ugasi loading nakon whenReady
         });
 
       } catch (e) {
@@ -222,14 +222,16 @@ export function InteractiveMap() {
       }
     }
     
+    // Cleanup funkcija za uništavanje mape
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-  // }, [leafletLoaded, isMounted, loadLocations, t]); // loadLocations uklonjen iz ovisnosti
-  }, [leafletLoaded, isMounted, t]); // Uklonjen loadLocations
+  // }, [leafletLoaded, isMounted, loadLocations, t]); // loadLocations uklonjen iz ovisnosti dok je sakriven
+  }, [leafletLoaded, isMounted, t]);
+
 
   // Effect for ResizeObserver and window resize listener
   useEffect(() => {
@@ -239,7 +241,6 @@ export function InteractiveMap() {
     
     const resizeObserver = new ResizeObserver(() => {
         if (mapInstance) {
-            console.log("ResizeObserver triggered: invalidating map size.");
             mapInstance.invalidateSize(true);
         }
     });
@@ -249,7 +250,6 @@ export function InteractiveMap() {
     
     const handleWindowResize = () => {
         if (mapInstance) {
-            console.log("Window resize triggered: invalidating map size.");
             mapInstance.invalidateSize(true);
         }
     };
@@ -265,7 +265,7 @@ export function InteractiveMap() {
     };
   }, [leafletLoaded]); 
 
-  // Effect for periodic refresh - Sakriven
+  // Periodično osvježavanje - SAKRIVENO
   // useEffect(() => {
   //   if (!leafletLoaded || !mapRef.current) return; 
     
@@ -307,7 +307,7 @@ export function InteractiveMap() {
           rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossOrigin=""
+          crossOrigin="anonymous"
         />
       </Head>
       <Script
@@ -337,25 +337,25 @@ export function InteractiveMap() {
             <CardContent className="p-0"> {/* Osiguravamo da nema paddinga na contentu koji drži mapu */}
               <div 
                 id="interactive-map-container-outer" 
-                className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted" // Vraćeno na overflow-hidden
+                className="aspect-[16/9] w-full rounded-b-lg overflow-hidden relative bg-muted" 
               >
                 <div 
                   ref={mapContainerRef}
                   id="interactive-map-container" 
-                  className="w-full h-full" 
+                  className="w-full" // Uklonjena h-full klasa, oslanjamo se na inline style
                   style={{ 
-                    minHeight: '400px', 
+                    height: '500px', // FIKSNA VISINA ZA TESTIRANJE
                     position: 'relative', 
                     background: (isLoading || error) && !mapRef.current ? 'hsl(var(--muted))' : 'transparent' 
                   }}
                 />
-                {(isLoading && !mapRef.current) && ( // Prikazuje loader samo ako mapa još nije inicijalizirana
+                {(isLoading && !mapRef.current) && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 z-10 backdrop-blur-sm pointer-events-none">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />
                     <p className="text-lg text-muted-foreground">{t('loading')}</p>
                   </div>
                 )}
-                {error && ( // Prikazuje error uvijek ako postoji
+                {error && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/20 text-destructive z-10 p-4 text-center backdrop-blur-sm pointer-events-none">
                     <AlertTriangle className="h-10 w-10 mb-2" />
                     <p className="font-semibold">Map Error</p>
@@ -370,4 +370,6 @@ export function InteractiveMap() {
     </>
   );
 }
+    
+
     
